@@ -1,0 +1,1967 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Vibe Coding 基础交互式学习资料</title>
+  <style>
+    :root {
+      --paper: #f8f6f0;
+      --surface: #ffffff;
+      --ink: #17212b;
+      --muted: #65717f;
+      --line: #d9ded8;
+      --blue: #2563eb;
+      --green: #178760;
+      --amber: #b76114;
+      --rose: #be3455;
+      --teal: #0f766e;
+      --focus: #111827;
+      --shadow: 0 18px 44px rgba(30, 41, 59, 0.12);
+      --radius: 8px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.72), rgba(255,255,255,0)),
+        var(--paper);
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      line-height: 1.55;
+    }
+
+    button,
+    input,
+    textarea,
+    select {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    .app {
+      display: grid;
+      grid-template-columns: minmax(260px, 330px) minmax(0, 1fr);
+      min-height: 100vh;
+    }
+
+    .sidebar {
+      position: sticky;
+      top: 0;
+      align-self: start;
+      height: 100vh;
+      overflow: auto;
+      border-right: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.74);
+      backdrop-filter: blur(14px);
+      padding: 22px;
+    }
+
+    .brand {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .brand-mark {
+      width: 42px;
+      height: 42px;
+      display: grid;
+      place-items: center;
+      border-radius: var(--radius);
+      background: var(--ink);
+      color: white;
+      font-weight: 800;
+      letter-spacing: 0;
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      margin-top: 0;
+    }
+
+    h1 {
+      font-size: 22px;
+      line-height: 1.2;
+      margin-bottom: 4px;
+    }
+
+    h2 {
+      font-size: clamp(26px, 4vw, 44px);
+      line-height: 1.08;
+      letter-spacing: 0;
+      margin-bottom: 12px;
+    }
+
+    h3 {
+      font-size: 18px;
+      margin-bottom: 10px;
+    }
+
+    .muted {
+      color: var(--muted);
+    }
+
+    .small {
+      font-size: 13px;
+    }
+
+    .progress-wrap {
+      margin: 16px 0 18px;
+    }
+
+    .progress-line {
+      height: 10px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      overflow: hidden;
+      background: #edf0ec;
+    }
+
+    .progress-bar {
+      height: 100%;
+      width: 0;
+      background: linear-gradient(90deg, var(--green), var(--blue));
+      transition: width 180ms ease;
+    }
+
+    .nav-list {
+      display: grid;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    .lesson-link {
+      width: 100%;
+      border: 1px solid transparent;
+      border-radius: var(--radius);
+      background: transparent;
+      color: var(--ink);
+      padding: 10px 11px;
+      text-align: left;
+      display: grid;
+      grid-template-columns: 26px minmax(0, 1fr) auto;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .lesson-link:hover {
+      background: #f1f5f2;
+    }
+
+    .lesson-link.active {
+      background: var(--surface);
+      border-color: #b8c5d4;
+      box-shadow: 0 8px 20px rgba(30, 41, 59, 0.08);
+    }
+
+    .lesson-link.done .index-dot {
+      background: var(--green);
+      color: white;
+    }
+
+    .index-dot {
+      width: 26px;
+      height: 26px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: #e6ebe6;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .lesson-title-short {
+      min-width: 0;
+      font-weight: 700;
+      line-height: 1.25;
+    }
+
+    .lesson-status {
+      color: var(--muted);
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .main {
+      min-width: 0;
+      padding: 28px clamp(18px, 4vw, 54px) 44px;
+    }
+
+    .top-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 18px;
+      flex-wrap: wrap;
+    }
+
+    .ghost-button,
+    .primary-button,
+    .icon-button,
+    .tab-button,
+    .choice-button {
+      border-radius: var(--radius);
+      border: 1px solid var(--line);
+      min-height: 40px;
+      padding: 9px 13px;
+      background: var(--surface);
+      color: var(--ink);
+      transition: transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease;
+    }
+
+    .ghost-button:hover,
+    .primary-button:hover,
+    .icon-button:hover,
+    .tab-button:hover,
+    .choice-button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 18px rgba(30, 41, 59, 0.1);
+    }
+
+    .primary-button {
+      background: var(--ink);
+      border-color: var(--ink);
+      color: white;
+      font-weight: 800;
+    }
+
+    .primary-button:disabled,
+    .ghost-button:disabled {
+      opacity: 0.48;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    .button-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .lesson-head {
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(260px, 0.7fr);
+      gap: 26px;
+      align-items: stretch;
+      margin-bottom: 22px;
+    }
+
+    .intro-panel,
+    .map-panel,
+    .content-panel,
+    .practice-panel,
+    .quiz-panel,
+    .source-panel {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(255, 255, 255, 0.86);
+      box-shadow: var(--shadow);
+    }
+
+    .intro-panel {
+      padding: clamp(20px, 4vw, 34px);
+      min-height: 310px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .map-panel {
+      padding: 18px;
+      display: grid;
+      grid-template-rows: auto minmax(160px, 1fr) auto;
+      gap: 12px;
+      min-height: 310px;
+    }
+
+    .map-panel canvas {
+      width: 100%;
+      height: 230px;
+      display: block;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fbfcfb;
+    }
+
+    .pill-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 14px 0;
+    }
+
+    .pill {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 5px 10px;
+      background: #f7faf7;
+      color: #354250;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .tabs {
+      position: sticky;
+      top: 0;
+      z-index: 4;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      padding: 10px;
+      margin-bottom: 14px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(248, 246, 240, 0.92);
+      backdrop-filter: blur(12px);
+    }
+
+    .tab-button {
+      box-shadow: none;
+      min-height: 38px;
+      padding: 8px 12px;
+      font-weight: 800;
+    }
+
+    .tab-button.active {
+      background: var(--ink);
+      border-color: var(--ink);
+      color: white;
+    }
+
+    .content-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 14px;
+    }
+
+    .content-panel,
+    .practice-panel,
+    .quiz-panel,
+    .source-panel {
+      padding: clamp(16px, 3vw, 24px);
+    }
+
+    .concept-list {
+      display: grid;
+      gap: 12px;
+      padding: 0;
+      margin: 0;
+      list-style: none;
+    }
+
+    .concept-list li {
+      border-left: 4px solid var(--blue);
+      padding: 12px 14px;
+      background: #f8fbff;
+      border-radius: 0 var(--radius) var(--radius) 0;
+    }
+
+    .concept-list li:nth-child(2n) {
+      border-left-color: var(--green);
+      background: #f4fbf7;
+    }
+
+    .concept-list li:nth-child(3n) {
+      border-left-color: var(--amber);
+      background: #fff8f1;
+    }
+
+    .code-block {
+      margin: 12px 0;
+      border: 1px solid #253140;
+      border-radius: var(--radius);
+      background: #101820;
+      color: #eef7ff;
+      overflow: auto;
+      box-shadow: 0 16px 34px rgba(16, 24, 32, 0.16);
+    }
+
+    pre {
+      margin: 0;
+      padding: 16px;
+      font-size: 14px;
+      line-height: 1.65;
+      white-space: pre-wrap;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+    }
+
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    }
+
+    .output {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 12px;
+      background: #f3f6f3;
+      min-height: 48px;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .practice-control {
+      display: grid;
+      gap: 12px;
+      margin-top: 12px;
+    }
+
+    label {
+      font-weight: 800;
+    }
+
+    input,
+    textarea,
+    select {
+      width: 100%;
+      border: 1px solid #b9c2ba;
+      border-radius: var(--radius);
+      padding: 11px 12px;
+      background: white;
+      color: var(--ink);
+    }
+
+    textarea {
+      min-height: 130px;
+      resize: vertical;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+      line-height: 1.55;
+    }
+
+    input:focus,
+    textarea:focus,
+    select:focus,
+    button:focus-visible {
+      outline: 3px solid rgba(37, 99, 235, 0.22);
+      outline-offset: 2px;
+      border-color: var(--blue);
+    }
+
+    .feedback {
+      min-height: 24px;
+      font-weight: 800;
+    }
+
+    .feedback.good {
+      color: var(--green);
+    }
+
+    .feedback.bad {
+      color: var(--rose);
+    }
+
+    .scenario-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .scenario-item,
+    .quiz-question,
+    .table-preview,
+    .env-preview,
+    .api-preview,
+    .step-item,
+    .prompt-box {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 14px;
+      background: #fbfcfb;
+    }
+
+    .scenario-actions,
+    .choice-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .choice-button.selected {
+      background: var(--blue);
+      color: white;
+      border-color: var(--blue);
+    }
+
+    .choice-button.correct {
+      background: var(--green);
+      color: white;
+      border-color: var(--green);
+    }
+
+    .choice-button.wrong {
+      background: var(--rose);
+      color: white;
+      border-color: var(--rose);
+    }
+
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+      font-size: 14px;
+    }
+
+    .data-table th,
+    .data-table td {
+      border: 1px solid var(--line);
+      padding: 9px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    .data-table th {
+      background: #edf2ef;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .two-col {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .quiz-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .quiz-options {
+      display: grid;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .quiz-option {
+      display: grid;
+      grid-template-columns: 22px minmax(0, 1fr);
+      gap: 8px;
+      align-items: start;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 10px;
+      background: white;
+      font-weight: 600;
+    }
+
+    .quiz-option input {
+      width: auto;
+      margin-top: 4px;
+    }
+
+    .copy-area {
+      position: relative;
+    }
+
+    .prompt-box {
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+      background: #101820;
+      color: #eef7ff;
+    }
+
+    .source-list {
+      display: grid;
+      gap: 8px;
+      padding-left: 18px;
+    }
+
+    .source-list a {
+      color: var(--blue);
+      font-weight: 800;
+      text-decoration-thickness: 2px;
+      text-underline-offset: 3px;
+    }
+
+    .toast {
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      z-index: 20;
+      border: 1px solid #0d513b;
+      border-radius: var(--radius);
+      padding: 12px 14px;
+      background: #effaf3;
+      color: #0d513b;
+      font-weight: 800;
+      box-shadow: var(--shadow);
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(8px);
+      transition: opacity 140ms ease, transform 140ms ease;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    @media (max-width: 960px) {
+      .app {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        position: relative;
+        height: auto;
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .lesson-head {
+        grid-template-columns: 1fr;
+      }
+
+      .form-grid,
+      .two-col {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .main {
+        padding-inline: 14px;
+      }
+
+      .tabs {
+        position: static;
+      }
+
+      .tab-button,
+      .ghost-button,
+      .primary-button,
+      .choice-button {
+        width: 100%;
+      }
+
+      .button-row,
+      .scenario-actions,
+      .choice-grid {
+        align-items: stretch;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar" aria-label="课程目录">
+      <div class="brand">
+        <div class="brand-mark">VC</div>
+        <div>
+          <h1>Vibe Coding 基础课</h1>
+          <p class="muted small">边点边学的项目生成入门资料</p>
+        </div>
+      </div>
+      <div class="progress-wrap" aria-label="整体进度">
+        <div class="button-row" style="justify-content: space-between; margin-bottom: 8px;">
+          <strong>学习进度</strong>
+          <span id="overallText" class="muted small">0%</span>
+        </div>
+        <div class="progress-line"><div id="overallBar" class="progress-bar"></div></div>
+      </div>
+      <div class="button-row">
+        <button id="resetProgress" class="ghost-button" type="button">重置进度</button>
+      </div>
+      <nav id="lessonNav" class="nav-list"></nav>
+    </aside>
+
+    <main class="main">
+      <div class="top-actions">
+        <p class="muted" id="breadcrumb">第 1 课</p>
+        <div class="button-row">
+          <button id="prevLesson" class="ghost-button" type="button">上一课</button>
+          <button id="nextLesson" class="primary-button" type="button">下一课</button>
+        </div>
+      </div>
+
+      <section class="lesson-head" aria-labelledby="lessonTitle">
+        <div class="intro-panel">
+          <div>
+            <h2 id="lessonTitle"></h2>
+            <p id="lessonGoal" class="muted"></p>
+            <div id="lessonTags" class="pill-row"></div>
+          </div>
+          <div class="button-row">
+            <button id="markLesson" class="primary-button" type="button">标记本课完成</button>
+            <button id="copyPromptTop" class="ghost-button" type="button">复制本课提示词</button>
+          </div>
+        </div>
+        <div class="map-panel">
+          <div>
+            <h3>知识地图</h3>
+            <p class="muted small">节点越深，代表你越接近完整项目生成流程。</p>
+          </div>
+          <canvas id="mapCanvas" width="520" height="300" aria-label="课程知识地图"></canvas>
+          <p id="mapCaption" class="muted small"></p>
+        </div>
+      </section>
+
+      <div class="tabs" role="tablist" aria-label="学习区域">
+        <button class="tab-button active" data-tab="concept" type="button">概念</button>
+        <button class="tab-button" data-tab="example" type="button">例子</button>
+        <button class="tab-button" data-tab="practice" type="button">练习</button>
+        <button class="tab-button" data-tab="quiz" type="button">小测验</button>
+        <button class="tab-button" data-tab="prompt" type="button">提示词</button>
+        <button class="tab-button" data-tab="sources" type="button">资料源</button>
+      </div>
+
+      <section id="tabContent" class="content-grid" aria-live="polite"></section>
+    </main>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    const lessons = [
+      {
+        id: "variables",
+        title: "变量：给数据起名字",
+        shortTitle: "变量",
+        goal: "学会把用户输入、配置、接口返回值保存起来，之后交给函数、页面或数据库继续使用。",
+        tags: ["const", "let", "字符串", "数字", "布尔值"],
+        concepts: [
+          "变量像一个有名字的盒子。你把值放进去，后面就可以通过名字拿出来。",
+          "优先使用 const，表示这个名字不会重新指向另一个值；确实需要改变时再用 let。",
+          "常见值类型包括字符串、数字、布尔值、数组、对象、null 和 undefined。",
+          "vibe coding 时，变量名要尽量贴近业务，比如 habitName、dailyGoal、currentUser，比 x、data1 更好。"
+        ],
+        code: `const habitName = "Read";
+let streakDays = 3;
+const isCompletedToday = false;
+
+streakDays = streakDays + 1;
+
+console.log(habitName);
+console.log(streakDays);
+console.log(isCompletedToday);`,
+        output: "Read\n4\nfalse",
+        practice: {
+          type: "fill",
+          title: "补全变量名",
+          question: "你正在做习惯打卡项目。下面这个值表示“今天是否已经打卡”，请写一个清晰的英文变量名。",
+          placeholder: "例如 isSomething",
+          accepted: ["isCompletedToday", "hasCheckedInToday", "didCheckInToday"],
+          hint: "布尔值通常用 is、has、can、should 这类开头。"
+        },
+        quiz: [
+          {
+            q: "什么时候更适合用 const？",
+            options: ["变量名不会重新指向另一个值时", "只要值是字符串时", "只要代码在函数外面时"],
+            answer: 0
+          },
+          {
+            q: "下面哪个变量名更适合保存用户邮箱？",
+            options: ["x", "userEmail", "thing"],
+            answer: 1
+          }
+        ],
+        prompt: "请帮我检查当前项目里的变量命名，重点看它们是否表达了真实业务含义。请只指出会影响可读性或后续维护的命名，并给出替代名称。"
+      },
+      {
+        id: "functions",
+        title: "函数：把动作封装起来",
+        shortTitle: "函数",
+        goal: "学会把重复动作、计算逻辑和业务规则包装成可复用的小单元。",
+        tags: ["function", "参数", "返回值", "复用"],
+        concepts: [
+          "函数是一段有名字的流程。它可以接收输入，也可以返回结果。",
+          "参数是函数需要的信息；返回值是函数处理后交出来的结果。",
+          "好函数通常只做一件清楚的事，比如 calculateStreak、formatDate、createHabit。",
+          "让 AI 写代码时，可以要求它把复杂逻辑拆成小函数，这样更容易调试和测试。"
+        ],
+        code: `function calculateNextStreak(isCompletedToday, currentStreak) {
+  if (isCompletedToday) {
+    return currentStreak + 1;
+  }
+
+  return currentStreak;
+}
+
+const nextStreak = calculateNextStreak(true, 6);
+console.log(nextStreak);`,
+        output: "7",
+        practice: {
+          type: "fill",
+          title: "补全函数名",
+          question: "这个函数会根据价格和折扣计算最终价格。请写一个清晰的函数名。",
+          placeholder: "例如 verb + noun",
+          accepted: ["calculateFinalPrice", "getDiscountedPrice", "calculateDiscountedPrice"],
+          hint: "函数名通常像动作：calculate、get、create、update、delete。"
+        },
+        quiz: [
+          {
+            q: "函数参数的作用是什么？",
+            options: ["给函数传入它需要的信息", "自动把项目部署上线", "只能保存字符串"],
+            answer: 0
+          },
+          {
+            q: "下面哪个函数更容易维护？",
+            options: ["doEverything()", "calculateStreak()", "handleStuff()"],
+            answer: 1
+          }
+        ],
+        prompt: "请帮我把这段代码里重复出现的逻辑提取成小函数。要求函数名清晰，每个函数只做一件事，并解释每个函数负责什么。"
+      },
+      {
+        id: "objects-arrays",
+        title: "对象与数组：组织一组数据",
+        shortTitle: "对象与数组",
+        goal: "学会表示用户、任务、订单、文章这类真实业务数据，以及它们的列表。",
+        tags: ["object", "array", "map", "filter", "业务模型"],
+        concepts: [
+          "对象用键值对描述一个东西，比如一个用户有 name、email、role。",
+          "数组用来保存一组东西，比如多个任务、多个订单、多个消息。",
+          "数组常配合 map、filter、find 使用：生成新列表、筛选列表、找到某一项。",
+          "生成项目之前，先写出核心对象和数组，AI 就更容易设计页面、接口和数据库。"
+        ],
+        code: `const habit = {
+  id: "habit_1",
+  name: "Read",
+  targetMinutes: 20,
+  tags: ["focus", "daily"]
+};
+
+const habits = [habit, { id: "habit_2", name: "Run", targetMinutes: 30 }];
+
+const longHabits = habits.filter(item => item.targetMinutes >= 30);
+console.log(longHabits[0].name);`,
+        output: "Run",
+        practice: {
+          type: "fill",
+          title: "判断数据结构",
+          question: "如果你要保存“很多篇文章”，应该优先使用 object 还是 array？",
+          placeholder: "输入 object 或 array",
+          accepted: ["array"],
+          hint: "一组同类数据通常用数组；单个实体通常用对象。"
+        },
+        quiz: [
+          {
+            q: "一个用户对象通常适合长什么样？",
+            options: ["{ name: \"Lin\", email: \"a@b.com\" }", "[\"Lin\", \"a@b.com\"]", "\"Lin,a@b.com\""],
+            answer: 0
+          },
+          {
+            q: "filter 最常见的用途是？",
+            options: ["筛选数组", "删除数据库", "启动服务器"],
+            answer: 0
+          }
+        ],
+        prompt: "我准备做一个项目，请先帮我把核心业务对象列出来。每个对象请包含字段名、字段类型、示例值，以及它为什么需要存在。"
+      },
+      {
+        id: "conditionals-loops",
+        title: "条件判断与循环：让代码会选择、会重复",
+        shortTitle: "条件与循环",
+        goal: "学会表达“如果怎样就怎样”和“对每一项都做某事”，这是业务规则的基础。",
+        tags: ["if", "else", "for", "for...of", "业务规则"],
+        concepts: [
+          "条件判断用来处理分支：登录了显示个人中心，没登录显示登录按钮。",
+          "循环用来处理重复：渲染每一条任务、检查每一笔账单、统计每一天的数据。",
+          "先把规则用中文写清楚，再翻成 if 和循环，通常比直接让 AI 猜更稳定。",
+          "复杂条件要拆开命名，比如 const canDelete = isOwner && !isArchived。"
+        ],
+        code: `const user = { name: "Mina", role: "admin" };
+const tasks = ["write plan", "build page", "test flow"];
+
+if (user.role === "admin") {
+  console.log("Can manage users");
+} else {
+  console.log("Can view own tasks");
+}
+
+for (const task of tasks) {
+  console.log("Task: " + task);
+}`,
+        output: "Can manage users\nTask: write plan\nTask: build page\nTask: test flow",
+        practice: {
+          type: "order",
+          title: "排出逻辑顺序",
+          question: "一个用户点击“删除任务”时，比较稳妥的判断顺序是什么？",
+          steps: ["检查用户是否登录", "检查任务是否存在", "检查用户是否有权限", "执行删除并刷新列表"],
+          correct: [0, 1, 2, 3]
+        },
+        quiz: [
+          {
+            q: "if 最适合表达什么？",
+            options: ["条件分支", "安装依赖", "创建文件夹"],
+            answer: 0
+          },
+          {
+            q: "for...of 更适合处理什么？",
+            options: ["数组里的每一项", "一个环境变量", "一个页面标题"],
+            answer: 0
+          }
+        ],
+        prompt: "请把这个功能的业务规则先用中文列出来，再转换成清晰的 if/else 或循环逻辑。请特别指出边界情况。"
+      },
+      {
+        id: "modules",
+        title: "模块导入导出：把项目拆成文件",
+        shortTitle: "模块",
+        goal: "学会为什么项目会有很多文件，以及不同文件之间如何复用函数、组件和配置。",
+        tags: ["export", "import", "组件", "文件结构"],
+        concepts: [
+          "模块让一个文件可以把函数、对象或组件暴露给另一个文件使用。",
+          "export 是把东西拿出去；import 是把别人导出的东西拿进来。",
+          "项目变大后，模块能减少一个文件塞满所有代码的混乱。",
+          "vibe coding 时，可以让 AI 先设计文件结构，再按模块逐步实现。"
+        ],
+        code: `// utils/formatDate.js
+export function formatDate(date) {
+  return date.toISOString().slice(0, 10);
+}
+
+// pages/HabitList.js
+import { formatDate } from "../utils/formatDate.js";
+
+console.log(formatDate(new Date("2026-06-27")));`,
+        output: "2026-06-27",
+        practice: {
+          type: "fill",
+          title: "补全关键字",
+          question: "如果一个文件想把 formatDate 给其他文件用，应该使用哪个关键字？",
+          placeholder: "输入一个关键字",
+          accepted: ["export"],
+          hint: "拿出去是 export，拿进来是 import。"
+        },
+        quiz: [
+          {
+            q: "import 的作用是？",
+            options: ["从其他模块拿来已导出的内容", "把浏览器缓存删除", "创建数据库表"],
+            answer: 0
+          },
+          {
+            q: "把所有代码都放进一个文件的主要问题是？",
+            options: ["难读、难改、难测试", "运行速度一定最快", "不能写中文"],
+            answer: 0
+          }
+        ],
+        prompt: "请根据这个项目需求设计一个清晰的文件结构。说明每个文件负责什么，并避免一开始就创建过度复杂的目录。"
+      },
+      {
+        id: "async-await",
+        title: "async/await：等待异步结果",
+        shortTitle: "async/await",
+        goal: "学会处理接口请求、文件上传、数据库读取这类不会立刻完成的操作。",
+        tags: ["Promise", "await", "fetch", "loading", "错误处理"],
+        concepts: [
+          "异步操作不会马上得到结果，比如请求接口、读取文件、等待数据库返回。",
+          "async 表示函数里可以使用 await；await 表示先等这个异步结果回来。",
+          "真实项目里异步逻辑通常要配合 loading、error、success 三种状态。",
+          "不要只让 AI 写 happy path，还要要求它处理失败、超时、空数据。"
+        ],
+        code: `async function loadHabits() {
+  try {
+    const response = await fetch("/api/habits");
+    const habits = await response.json();
+    console.log(habits.length);
+  } catch (error) {
+    console.log("Failed to load habits");
+  }
+}
+
+loadHabits();`,
+        output: "如果接口成功：输出习惯数量\n如果接口失败：Failed to load habits",
+        practice: {
+          type: "fill",
+          title: "补全等待关键字",
+          question: "在 async 函数里，如果要等待 fetch 返回结果，应该在 fetch 前面加什么？",
+          placeholder: "输入关键字",
+          accepted: ["await"],
+          hint: "这个关键字的意思就是“等一下”。"
+        },
+        quiz: [
+          {
+            q: "async/await 常用于处理什么？",
+            options: ["接口请求这类异步操作", "CSS 颜色", "HTML 标题层级"],
+            answer: 0
+          },
+          {
+            q: "异步请求失败时，代码最好要有什么？",
+            options: ["错误处理和用户提示", "更多变量名缩写", "删除所有日志"],
+            answer: 0
+          }
+        ],
+        prompt: "请检查这个异步请求流程，补齐 loading、error、success 状态，并确保接口失败时页面有清晰提示。"
+      },
+      {
+        id: "json",
+        title: "JSON：前后端最常见的数据格式",
+        shortTitle: "JSON",
+        goal: "学会看懂接口请求体、响应体、配置文件和 AI 生成的数据示例。",
+        tags: ["key-value", "API body", "response", "配置"],
+        concepts: [
+          "JSON 是一种文本格式，常用来在前端、后端、数据库和配置之间传递数据。",
+          "JSON 的键必须用双引号，字符串也必须用双引号。",
+          "JSON 可以表示对象、数组、字符串、数字、布尔值和 null。",
+          "当你让 AI 设计接口时，请它给出请求 JSON 和响应 JSON，会极大减少误解。"
+        ],
+        code: `{
+  "id": "habit_1",
+  "name": "Read",
+  "targetMinutes": 20,
+  "completedDates": ["2026-06-25", "2026-06-26"],
+  "isArchived": false
+}`,
+        output: "这是合法 JSON。它描述了一个习惯对象。",
+        practice: {
+          type: "json",
+          title: "JSON 校验器",
+          question: "修改下面的 JSON，然后点击校验。试着故意删掉一个双引号，看看错误是什么。",
+          sample: "{\n  \"name\": \"Read\",\n  \"targetMinutes\": 20,\n  \"isArchived\": false\n}"
+        },
+        quiz: [
+          {
+            q: "合法 JSON 的字符串应该使用什么引号？",
+            options: ["双引号", "单引号", "不用引号"],
+            answer: 0
+          },
+          {
+            q: "接口响应经常使用 JSON 的原因是？",
+            options: ["结构清晰，前后端都容易解析", "它只能在手机端使用", "它能自动生成 UI"],
+            answer: 0
+          }
+        ],
+        prompt: "请为这个功能设计接口的请求 JSON 和响应 JSON。每个字段请说明类型、是否必填、示例值和错误情况。"
+      },
+      {
+        id: "frontend-backend-api",
+        title: "前端、后端与 API：项目如何连起来",
+        shortTitle: "前后端/API",
+        goal: "学会区分页面、服务器和接口的职责，知道生成项目时哪些代码应该放在哪里。",
+        tags: ["frontend", "backend", "API", "request", "response"],
+        concepts: [
+          "前端负责用户看到和操作的部分，比如页面、按钮、表单、交互状态。",
+          "后端负责服务器上的规则，比如登录校验、数据库读写、权限判断、文件处理。",
+          "API 是前端和后端之间的约定：前端发什么请求，后端回什么数据。",
+          "当项目出 bug 时，先判断问题在前端显示、接口请求、后端逻辑还是数据库数据。"
+        ],
+        code: `// Frontend
+await fetch("/api/habits", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ name: "Read", targetMinutes: 20 })
+});
+
+// Backend API
+// POST /api/habits
+// 1. Validate body
+// 2. Insert into database
+// 3. Return created habit as JSON`,
+        output: "前端发请求，后端处理规则并返回 JSON。",
+        practice: {
+          type: "classify",
+          title: "判断职责归属",
+          question: "把下面场景分到前端、后端或 API。",
+          labels: ["前端", "后端", "API"],
+          items: [
+            { text: "显示任务列表和空状态", answer: "前端" },
+            { text: "检查当前用户是否有删除权限", answer: "后端" },
+            { text: "约定 POST /api/tasks 需要哪些字段", answer: "API" }
+          ]
+        },
+        quiz: [
+          {
+            q: "API 最像什么？",
+            options: ["前端和后端之间的数据合约", "一张 CSS 背景图", "只在数据库内部使用的字段"],
+            answer: 0
+          },
+          {
+            q: "密码校验这类敏感逻辑应该主要放在哪里？",
+            options: ["后端", "按钮文字里", "浏览器标题里"],
+            answer: 0
+          }
+        ],
+        prompt: "请把这个功能拆成前端职责、后端职责和 API 合约。API 合约要包含路径、方法、请求 JSON、响应 JSON 和错误码。"
+      },
+      {
+        id: "database-table",
+        title: "数据库表：把数据长期保存",
+        shortTitle: "数据库表",
+        goal: "学会把对象转换成表、字段和记录，理解为什么项目需要数据模型。",
+        tags: ["table", "row", "column", "primary key", "CRUD"],
+        concepts: [
+          "数据库表像一张结构化表格：列是字段，行是一条条记录。",
+          "主键通常用来唯一标识一条记录，比如 user_id、task_id。",
+          "对象字段和数据库列经常一一对应，但数据库还会考虑类型、唯一性、外键和索引。",
+          "生成项目时，先设计数据表，后面的页面、API 和测试都会更稳定。"
+        ],
+        code: `CREATE TABLE habits (
+  id text PRIMARY KEY,
+  user_id text NOT NULL,
+  name text NOT NULL,
+  target_minutes integer NOT NULL,
+  created_at timestamp NOT NULL
+);
+
+INSERT INTO habits (id, user_id, name, target_minutes, created_at)
+VALUES ('habit_1', 'user_1', 'Read', 20, '2026-06-27 09:00:00');`,
+        output: "创建 habits 表，并插入一条习惯记录。",
+        practice: {
+          type: "table",
+          title: "迷你数据表",
+          question: "添加几条习惯记录，观察对象字段如何变成表格的列。"
+        },
+        quiz: [
+          {
+            q: "数据库表中的一行通常代表什么？",
+            options: ["一条记录", "一个 CSS 类名", "一个终端命令"],
+            answer: 0
+          },
+          {
+            q: "主键的主要作用是？",
+            options: ["唯一标识一条记录", "让页面变好看", "替代所有字段"],
+            answer: 0
+          }
+        ],
+        prompt: "请根据这些业务对象设计数据库表。每张表请给出字段名、字段类型、主键、必要索引，以及表之间的关系。"
+      },
+      {
+        id: "environment",
+        title: "环境变量：把秘密和配置放到代码外",
+        shortTitle: "环境变量",
+        goal: "学会区分代码、配置和密钥，避免把 API Key、数据库密码写死进项目。",
+        tags: [".env", "process.env", "API_KEY", "配置"],
+        concepts: [
+          "环境变量是运行程序时注入的配置，比如数据库地址、API Key、运行环境。",
+          "密钥不要提交到 Git，也不要直接写进前端代码。",
+          "前端可见的环境变量和服务端私密环境变量要分清，具体规则取决于框架。",
+          "部署时，本地 .env 里的值通常要在 Vercel、Railway、Render 等平台重新配置。"
+        ],
+        code: `// .env
+DATABASE_URL="postgres://user:password@host:5432/app"
+OPENAI_API_KEY="sk-..."
+
+// server.js
+const databaseUrl = process.env.DATABASE_URL;
+
+if (!databaseUrl) {
+  throw new Error("DATABASE_URL is required");
+}`,
+        output: "代码从运行环境读取 DATABASE_URL，而不是把真实密码写死在文件里。",
+        practice: {
+          type: "env",
+          title: "生成 .env 示例",
+          question: "输入一个配置名和值，生成一段 .env 示例。请不要填真实密钥。"
+        },
+        quiz: [
+          {
+            q: "API Key 最好怎么处理？",
+            options: ["放在环境变量里，并避免提交到 Git", "写在公开页面里", "发到聊天群里备份"],
+            answer: 0
+          },
+          {
+            q: "部署线上项目时，环境变量通常需要在哪里配置？",
+            options: ["部署平台的环境变量设置里", "只在本地桌面上", "CSS 文件里"],
+            answer: 0
+          }
+        ],
+        prompt: "请检查这个项目需要哪些环境变量。请输出 .env.example，不要包含真实密钥，并说明每个变量在本地和部署平台如何配置。"
+      },
+      {
+        id: "capstone",
+        title: "综合练习：从想法到可生成项目",
+        shortTitle: "综合练习",
+        goal: "把前面的基础概念组合成一份更可靠的项目生成请求。",
+        tags: ["MVP", "需求", "数据模型", "验收", "AI 协作"],
+        concepts: [
+          "一个好请求通常包含：项目目标、用户、页面、核心数据、API、限制条件和验收标准。",
+          "不要一次让 AI 写完整大系统，先让它设计，再拆小步实现。",
+          "每完成一个小功能就运行、检查、提交，能避免错误堆到最后。",
+          "你需要懂基础概念，不是为了替 AI 写所有代码，而是为了判断它写得对不对。"
+        ],
+        code: `项目：习惯打卡 App
+用户：想培养每日习惯的人
+核心对象：
+- User: id, email, name
+- Habit: id, userId, name, targetMinutes, createdAt
+- CheckIn: id, habitId, date, note
+
+第一版页面：
+- 今日打卡
+- 习惯列表
+- 新建/编辑习惯
+- 简单统计
+
+验收：
+- 能创建习惯
+- 能打卡
+- 刷新后数据不丢
+- 表单有错误提示`,
+        output: "这是一份 AI 更容易执行的项目上下文。",
+        practice: {
+          type: "api",
+          title: "项目请求生成器",
+          question: "选择一个接口动作，生成一段你可以发给 AI 的 API 设计请求。"
+        },
+        quiz: [
+          {
+            q: "更适合 vibe coding 的方式是？",
+            options: ["先设计，再小步实现和验收", "一次生成所有功能且不运行", "只要页面好看就结束"],
+            answer: 0
+          },
+          {
+            q: "为什么要写验收标准？",
+            options: ["让你知道功能到底算不算完成", "让代码变成图片", "替代数据库"],
+            answer: 0
+          }
+        ],
+        prompt: "我想做一个项目。请先不要写代码，先帮我设计 MVP：目标用户、核心功能、页面结构、数据模型、API 合约、开发步骤和验收清单。"
+      }
+    ];
+
+    const sources = [
+      {
+        name: "MDN Web Docs: JavaScript 变量",
+        url: "https://developer.mozilla.org/en-US/docs/Learn_web_development/Core/Scripting/Variables"
+      },
+      {
+        name: "MDN Web Docs: 条件判断",
+        url: "https://developer.mozilla.org/en-US/docs/Learn_web_development/Core/Scripting/Conditionals"
+      },
+      {
+        name: "MDN Web Docs: JavaScript 模块",
+        url: "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Modules"
+      },
+      {
+        name: "MDN Web Docs: async function",
+        url: "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/async_function"
+      },
+      {
+        name: "MDN Web Docs: JSON",
+        url: "https://developer.mozilla.org/en-US/docs/Learn_web_development/Core/Scripting/JSON"
+      },
+      {
+        name: "MDN Web Docs: 客户端 API 介绍",
+        url: "https://developer.mozilla.org/en-US/docs/Learn_web_development/Extensions/Client-side_APIs/Introduction"
+      },
+      {
+        name: "PostgreSQL Documentation: Tables",
+        url: "https://www.postgresql.org/docs/current/tutorial-table.html"
+      },
+      {
+        name: "Node.js Documentation: Environment Variables",
+        url: "https://nodejs.org/api/environment_variables.html"
+      }
+    ];
+
+    const state = {
+      activeIndex: Number(localStorage.getItem("vc.activeIndex") || 0),
+      activeTab: localStorage.getItem("vc.activeTab") || "concept",
+      progress: JSON.parse(localStorage.getItem("vc.progress") || "{}"),
+      selectedSteps: [],
+      scenarioAnswers: {},
+      quizAnswers: {}
+    };
+
+    const nav = document.getElementById("lessonNav");
+    const title = document.getElementById("lessonTitle");
+    const goal = document.getElementById("lessonGoal");
+    const tags = document.getElementById("lessonTags");
+    const breadcrumb = document.getElementById("breadcrumb");
+    const tabContent = document.getElementById("tabContent");
+    const overallText = document.getElementById("overallText");
+    const overallBar = document.getElementById("overallBar");
+    const mapCaption = document.getElementById("mapCaption");
+    const toast = document.getElementById("toast");
+    const canvas = document.getElementById("mapCanvas");
+    const ctx = canvas.getContext("2d");
+
+    function saveState() {
+      localStorage.setItem("vc.activeIndex", String(state.activeIndex));
+      localStorage.setItem("vc.activeTab", state.activeTab);
+      localStorage.setItem("vc.progress", JSON.stringify(state.progress));
+    }
+
+    function getLesson() {
+      return lessons[state.activeIndex];
+    }
+
+    function ensureProgress(id) {
+      if (!state.progress[id]) {
+        state.progress[id] = {};
+      }
+      return state.progress[id];
+    }
+
+    function mark(id, key) {
+      const item = ensureProgress(id);
+      item[key] = true;
+      saveState();
+      renderNav();
+      renderProgress();
+      drawMap();
+    }
+
+    function isLessonDone(lesson) {
+      const item = state.progress[lesson.id] || {};
+      return ["concept", "example", "practice", "quiz", "prompt"].every(key => item[key]);
+    }
+
+    function completionPercent() {
+      const total = lessons.length * 5;
+      const done = lessons.reduce((sum, lesson) => {
+        const item = state.progress[lesson.id] || {};
+        return sum + ["concept", "example", "practice", "quiz", "prompt"].filter(key => item[key]).length;
+      }, 0);
+      return Math.round((done / total) * 100);
+    }
+
+    function renderProgress() {
+      const percent = completionPercent();
+      overallText.textContent = percent + "%";
+      overallBar.style.width = percent + "%";
+    }
+
+    function renderNav() {
+      nav.innerHTML = "";
+      lessons.forEach((lesson, index) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "lesson-link";
+        if (index === state.activeIndex) button.classList.add("active");
+        if (isLessonDone(lesson)) button.classList.add("done");
+        button.innerHTML = `
+          <span class="index-dot">${index + 1}</span>
+          <span class="lesson-title-short">${lesson.shortTitle}</span>
+          <span class="lesson-status">${isLessonDone(lesson) ? "完成" : "学习中"}</span>
+        `;
+        button.addEventListener("click", () => {
+          state.activeIndex = index;
+          state.activeTab = "concept";
+          state.selectedSteps = [];
+          state.scenarioAnswers = {};
+          state.quizAnswers = {};
+          saveState();
+          render();
+        });
+        nav.appendChild(button);
+      });
+    }
+
+    function renderHeader() {
+      const lesson = getLesson();
+      title.textContent = lesson.title;
+      goal.textContent = lesson.goal;
+      breadcrumb.textContent = `第 ${state.activeIndex + 1} 课 / 共 ${lessons.length} 课`;
+      tags.innerHTML = lesson.tags.map(tag => `<span class="pill">${escapeHtml(tag)}</span>`).join("");
+      document.getElementById("prevLesson").disabled = state.activeIndex === 0;
+      document.getElementById("nextLesson").disabled = state.activeIndex === lessons.length - 1;
+      document.getElementById("markLesson").textContent = isLessonDone(lesson) ? "本课已完成" : "标记本课完成";
+      mapCaption.textContent = `${lesson.shortTitle}：${lesson.goal}`;
+    }
+
+    function renderTabs() {
+      document.querySelectorAll(".tab-button").forEach(button => {
+        button.classList.toggle("active", button.dataset.tab === state.activeTab);
+      });
+    }
+
+    function renderTabContent() {
+      const lesson = getLesson();
+      if (state.activeTab === "concept") {
+        mark(lesson.id, "concept");
+      }
+      if (state.activeTab === "concept") renderConcept(lesson);
+      if (state.activeTab === "example") renderExample(lesson);
+      if (state.activeTab === "practice") renderPractice(lesson);
+      if (state.activeTab === "quiz") renderQuiz(lesson);
+      if (state.activeTab === "prompt") renderPrompt(lesson);
+      if (state.activeTab === "sources") renderSources();
+    }
+
+    function renderConcept(lesson) {
+      tabContent.innerHTML = `
+        <article class="content-panel">
+          <h3>你要掌握什么</h3>
+          <ul class="concept-list">
+            ${lesson.concepts.map(item => `<li>${escapeHtml(item)}</li>`).join("")}
+          </ul>
+        </article>
+      `;
+    }
+
+    function renderExample(lesson) {
+      tabContent.innerHTML = `
+        <article class="content-panel">
+          <h3>代码例子</h3>
+          <p class="muted">先读代码，再点运行示例。这里不执行任意代码，只展示本课示例的预期输出，避免误运行危险脚本。</p>
+          <div class="code-block"><pre><code>${escapeHtml(lesson.code)}</code></pre></div>
+          <div class="button-row">
+            <button id="runExample" class="primary-button" type="button">运行示例</button>
+          </div>
+          <h3 style="margin-top: 18px;">输出</h3>
+          <div id="exampleOutput" class="output">点击“运行示例”查看输出。</div>
+        </article>
+      `;
+      document.getElementById("runExample").addEventListener("click", () => {
+        document.getElementById("exampleOutput").textContent = lesson.output;
+        mark(lesson.id, "example");
+      });
+    }
+
+    function renderPractice(lesson) {
+      const p = lesson.practice;
+      if (p.type === "fill") renderFillPractice(lesson, p);
+      if (p.type === "json") renderJsonPractice(lesson, p);
+      if (p.type === "classify") renderClassifyPractice(lesson, p);
+      if (p.type === "table") renderTablePractice(lesson, p);
+      if (p.type === "env") renderEnvPractice(lesson, p);
+      if (p.type === "api") renderApiPractice(lesson, p);
+      if (p.type === "order") renderOrderPractice(lesson, p);
+    }
+
+    function renderFillPractice(lesson, p) {
+      tabContent.innerHTML = `
+        <article class="practice-panel">
+          <h3>${escapeHtml(p.title)}</h3>
+          <p>${escapeHtml(p.question)}</p>
+          <div class="practice-control">
+            <label for="fillAnswer">你的答案</label>
+            <input id="fillAnswer" autocomplete="off" placeholder="${escapeHtml(p.placeholder)}">
+            <div class="button-row">
+              <button id="checkFill" class="primary-button" type="button">检查答案</button>
+              <button id="showHint" class="ghost-button" type="button">提示</button>
+            </div>
+            <div id="practiceFeedback" class="feedback"></div>
+          </div>
+        </article>
+      `;
+      document.getElementById("showHint").addEventListener("click", () => {
+        setFeedback(p.hint, false);
+      });
+      document.getElementById("checkFill").addEventListener("click", () => {
+        const value = document.getElementById("fillAnswer").value.trim();
+        const ok = p.accepted.some(answer => answer.toLowerCase() === value.toLowerCase());
+        if (ok) {
+          setFeedback("答对了。这个命名能让后面的代码更容易读。", true);
+          mark(lesson.id, "practice");
+        } else {
+          setFeedback("还差一点。试着用更贴近业务的英文名。", false);
+        }
+      });
+    }
+
+    function renderJsonPractice(lesson, p) {
+      tabContent.innerHTML = `
+        <article class="practice-panel">
+          <h3>${escapeHtml(p.title)}</h3>
+          <p>${escapeHtml(p.question)}</p>
+          <div class="practice-control">
+            <label for="jsonInput">JSON 输入</label>
+            <textarea id="jsonInput">${escapeHtml(p.sample)}</textarea>
+            <div class="button-row">
+              <button id="validateJson" class="primary-button" type="button">校验 JSON</button>
+              <button id="formatJson" class="ghost-button" type="button">格式化</button>
+            </div>
+            <div id="practiceFeedback" class="feedback"></div>
+            <div id="jsonPreview" class="output">校验后会显示解析结果。</div>
+          </div>
+        </article>
+      `;
+      document.getElementById("validateJson").addEventListener("click", () => {
+        validateJson(lesson.id, false);
+      });
+      document.getElementById("formatJson").addEventListener("click", () => {
+        validateJson(lesson.id, true);
+      });
+    }
+
+    function validateJson(lessonId, shouldFormat) {
+      const input = document.getElementById("jsonInput");
+      const preview = document.getElementById("jsonPreview");
+      try {
+        const parsed = JSON.parse(input.value);
+        if (shouldFormat) {
+          input.value = JSON.stringify(parsed, null, 2);
+        }
+        preview.textContent = JSON.stringify(parsed, null, 2);
+        setFeedback("JSON 合法。前后端都能稳定解析。", true);
+        mark(lessonId, "practice");
+      } catch (error) {
+        preview.textContent = "";
+        setFeedback("JSON 不合法：" + error.message, false);
+      }
+    }
+
+    function renderClassifyPractice(lesson, p) {
+      state.scenarioAnswers = {};
+      tabContent.innerHTML = `
+        <article class="practice-panel">
+          <h3>${escapeHtml(p.title)}</h3>
+          <p>${escapeHtml(p.question)}</p>
+          <div class="scenario-list">
+            ${p.items.map((item, index) => `
+              <div class="scenario-item">
+                <strong>${escapeHtml(item.text)}</strong>
+                <div class="scenario-actions">
+                  ${p.labels.map(label => `<button class="choice-button" data-index="${index}" data-label="${escapeHtml(label)}" type="button">${escapeHtml(label)}</button>`).join("")}
+                </div>
+              </div>
+            `).join("")}
+          </div>
+          <div class="button-row" style="margin-top: 12px;">
+            <button id="checkClassify" class="primary-button" type="button">检查分类</button>
+          </div>
+          <div id="practiceFeedback" class="feedback"></div>
+        </article>
+      `;
+      document.querySelectorAll(".choice-button").forEach(button => {
+        button.addEventListener("click", () => {
+          const index = button.dataset.index;
+          state.scenarioAnswers[index] = button.dataset.label;
+          document.querySelectorAll(`.choice-button[data-index="${index}"]`).forEach(item => item.classList.remove("selected"));
+          button.classList.add("selected");
+        });
+      });
+      document.getElementById("checkClassify").addEventListener("click", () => {
+        let correct = 0;
+        p.items.forEach((item, index) => {
+          if (state.scenarioAnswers[index] === item.answer) correct += 1;
+        });
+        if (correct === p.items.length) {
+          setFeedback("全部正确。你已经能区分前端、后端和 API 了。", true);
+          mark(lesson.id, "practice");
+        } else {
+          setFeedback(`答对 ${correct}/${p.items.length}。再想想：谁负责展示，谁负责规则，谁负责约定。`, false);
+        }
+      });
+    }
+
+    function renderOrderPractice(lesson, p) {
+      state.selectedSteps = [];
+      tabContent.innerHTML = `
+        <article class="practice-panel">
+          <h3>${escapeHtml(p.title)}</h3>
+          <p>${escapeHtml(p.question)}</p>
+          <div class="scenario-list">
+            ${p.steps.map((step, index) => `
+              <button class="step-item choice-button" data-step="${index}" type="button">${escapeHtml(step)}</button>
+            `).join("")}
+          </div>
+          <h3 style="margin-top: 16px;">你的顺序</h3>
+          <div id="selectedOrder" class="output">点击上面的步骤来排序。</div>
+          <div class="button-row" style="margin-top: 12px;">
+            <button id="checkOrder" class="primary-button" type="button">检查顺序</button>
+            <button id="resetOrder" class="ghost-button" type="button">重选</button>
+          </div>
+          <div id="practiceFeedback" class="feedback"></div>
+        </article>
+      `;
+      document.querySelectorAll(".step-item").forEach(button => {
+        button.addEventListener("click", () => {
+          const step = Number(button.dataset.step);
+          if (!state.selectedSteps.includes(step)) {
+            state.selectedSteps.push(step);
+            button.classList.add("selected");
+            renderSelectedOrder(p);
+          }
+        });
+      });
+      document.getElementById("resetOrder").addEventListener("click", () => {
+        state.selectedSteps = [];
+        document.querySelectorAll(".step-item").forEach(button => button.classList.remove("selected"));
+        renderSelectedOrder(p);
+        setFeedback("", true);
+      });
+      document.getElementById("checkOrder").addEventListener("click", () => {
+        const ok = JSON.stringify(state.selectedSteps) === JSON.stringify(p.correct);
+        if (ok) {
+          setFeedback("顺序正确。先验证，再执行修改，是更稳的业务流程。", true);
+          mark(lesson.id, "practice");
+        } else {
+          setFeedback("顺序还不稳。涉及删除时，通常先确认身份、数据和权限。", false);
+        }
+      });
+    }
+
+    function renderSelectedOrder(p) {
+      const selected = document.getElementById("selectedOrder");
+      selected.textContent = state.selectedSteps.length
+        ? state.selectedSteps.map((step, index) => `${index + 1}. ${p.steps[step]}`).join("\n")
+        : "点击上面的步骤来排序。";
+    }
+
+    function renderTablePractice(lesson, p) {
+      tabContent.innerHTML = `
+        <article class="practice-panel">
+          <h3>${escapeHtml(p.title)}</h3>
+          <p>${escapeHtml(p.question)}</p>
+          <div class="form-grid">
+            <label>习惯名<input id="habitName" value="Read"></label>
+            <label>目标分钟<input id="targetMinutes" type="number" value="20"></label>
+            <label>用户 ID<input id="userId" value="user_1"></label>
+          </div>
+          <div class="button-row" style="margin-top: 12px;">
+            <button id="addRow" class="primary-button" type="button">添加记录</button>
+          </div>
+          <div class="table-preview">
+            <table class="data-table">
+              <thead><tr><th>id</th><th>user_id</th><th>name</th><th>target_minutes</th></tr></thead>
+              <tbody id="habitRows"></tbody>
+            </table>
+          </div>
+          <div id="practiceFeedback" class="feedback"></div>
+        </article>
+      `;
+      const rows = [];
+      const renderRows = () => {
+        document.getElementById("habitRows").innerHTML = rows.map(row => `
+          <tr><td>${escapeHtml(row.id)}</td><td>${escapeHtml(row.userId)}</td><td>${escapeHtml(row.name)}</td><td>${escapeHtml(row.targetMinutes)}</td></tr>
+        `).join("");
+      };
+      document.getElementById("addRow").addEventListener("click", () => {
+        const name = document.getElementById("habitName").value.trim();
+        const targetMinutes = document.getElementById("targetMinutes").value.trim();
+        const userId = document.getElementById("userId").value.trim();
+        if (!name || !targetMinutes || !userId) {
+          setFeedback("请把三个字段都填上。数据库列通常会有必填规则。", false);
+          return;
+        }
+        rows.push({ id: "habit_" + (rows.length + 1), userId, name, targetMinutes });
+        renderRows();
+        setFeedback("已添加一条记录。对象字段已经变成表格列。", true);
+        mark(lesson.id, "practice");
+      });
+      renderRows();
+    }
+
+    function renderEnvPractice(lesson, p) {
+      tabContent.innerHTML = `
+        <article class="practice-panel">
+          <h3>${escapeHtml(p.title)}</h3>
+          <p>${escapeHtml(p.question)}</p>
+          <div class="two-col">
+            <label>变量名<input id="envKey" value="DATABASE_URL"></label>
+            <label>示例值<input id="envValue" value="postgres://example"></label>
+          </div>
+          <div class="button-row" style="margin-top: 12px;">
+            <button id="makeEnv" class="primary-button" type="button">生成</button>
+          </div>
+          <div class="env-preview" style="margin-top: 12px;">
+            <div id="envOutput" class="output">这里会生成 .env 示例。</div>
+          </div>
+          <div id="practiceFeedback" class="feedback"></div>
+        </article>
+      `;
+      document.getElementById("makeEnv").addEventListener("click", () => {
+        const key = document.getElementById("envKey").value.trim().toUpperCase().replace(/[^A-Z0-9_]/g, "_");
+        const value = document.getElementById("envValue").value.trim();
+        if (!key || !value) {
+          setFeedback("变量名和值都需要填写。", false);
+          return;
+        }
+        document.getElementById("envOutput").textContent = `${key}="${value}"\n\n// 在 Node.js 服务端读取：\nconst value = process.env.${key};`;
+        setFeedback("示例已生成。真实密钥请只放在本地或部署平台的安全配置里。", true);
+        mark(lesson.id, "practice");
+      });
+    }
+
+    function renderApiPractice(lesson, p) {
+      tabContent.innerHTML = `
+        <article class="practice-panel">
+          <h3>${escapeHtml(p.title)}</h3>
+          <p>${escapeHtml(p.question)}</p>
+          <div class="form-grid">
+            <label>方法
+              <select id="apiMethod">
+                <option>POST</option>
+                <option>GET</option>
+                <option>PATCH</option>
+                <option>DELETE</option>
+              </select>
+            </label>
+            <label>资源
+              <select id="apiResource">
+                <option value="habits">habits</option>
+                <option value="tasks">tasks</option>
+                <option value="notes">notes</option>
+              </select>
+            </label>
+            <label>动作
+              <select id="apiAction">
+                <option value="create">create</option>
+                <option value="list">list</option>
+                <option value="update">update</option>
+                <option value="delete">delete</option>
+              </select>
+            </label>
+          </div>
+          <div class="button-row" style="margin-top: 12px;">
+            <button id="makeApiPrompt" class="primary-button" type="button">生成请求</button>
+          </div>
+          <div class="api-preview" style="margin-top: 12px;">
+            <div id="apiOutput" class="output">这里会生成 API 设计请求。</div>
+          </div>
+          <div id="practiceFeedback" class="feedback"></div>
+        </article>
+      `;
+      document.getElementById("makeApiPrompt").addEventListener("click", () => {
+        const method = document.getElementById("apiMethod").value;
+        const resource = document.getElementById("apiResource").value;
+        const action = document.getElementById("apiAction").value;
+        const path = action === "list" || action === "create" ? `/api/${resource}` : `/api/${resource}/:id`;
+        document.getElementById("apiOutput").textContent =
+          `请帮我设计 ${method} ${path} 接口，用于 ${action} ${resource}。\n\n请输出：\n1. 请求 JSON\n2. 成功响应 JSON\n3. 常见错误响应\n4. 前端调用示例\n5. 后端需要做的校验`;
+        setFeedback("请求已生成。把它发给 AI，会比只说“帮我做接口”清楚很多。", true);
+        mark(lesson.id, "practice");
+      });
+    }
+
+    function renderQuiz(lesson) {
+      state.quizAnswers = {};
+      tabContent.innerHTML = `
+        <article class="quiz-panel">
+          <h3>小测验</h3>
+          <div class="quiz-list">
+            ${lesson.quiz.map((item, qIndex) => `
+              <div class="quiz-question">
+                <strong>${qIndex + 1}. ${escapeHtml(item.q)}</strong>
+                <div class="quiz-options">
+                  ${item.options.map((option, oIndex) => `
+                    <label class="quiz-option">
+                      <input type="radio" name="q${qIndex}" value="${oIndex}">
+                      <span>${escapeHtml(option)}</span>
+                    </label>
+                  `).join("")}
+                </div>
+              </div>
+            `).join("")}
+          </div>
+          <div class="button-row" style="margin-top: 14px;">
+            <button id="checkQuiz" class="primary-button" type="button">提交测验</button>
+          </div>
+          <div id="practiceFeedback" class="feedback"></div>
+        </article>
+      `;
+      document.getElementById("checkQuiz").addEventListener("click", () => {
+        let score = 0;
+        lesson.quiz.forEach((item, qIndex) => {
+          const selected = document.querySelector(`input[name="q${qIndex}"]:checked`);
+          if (selected && Number(selected.value) === item.answer) {
+            score += 1;
+          }
+        });
+        const passed = score === lesson.quiz.length;
+        setFeedback(`得分 ${score}/${lesson.quiz.length}。${passed ? "通过本课测验。" : "再看一遍概念卡片会更稳。"}`, passed);
+        if (passed) mark(lesson.id, "quiz");
+      });
+    }
+
+    function renderPrompt(lesson) {
+      tabContent.innerHTML = `
+        <article class="content-panel">
+          <h3>本课可复用提示词</h3>
+          <p class="muted">当你生成项目时，可以把这段话发给 AI，让它围绕本课知识帮你检查或设计。</p>
+          <div class="copy-area">
+            <div id="promptText" class="prompt-box">${escapeHtml(lesson.prompt)}</div>
+          </div>
+          <div class="button-row" style="margin-top: 12px;">
+            <button id="copyPrompt" class="primary-button" type="button">复制提示词</button>
+          </div>
+        </article>
+      `;
+      document.getElementById("copyPrompt").addEventListener("click", () => copyPrompt(lesson));
+    }
+
+    function renderSources() {
+      tabContent.innerHTML = `
+        <article class="source-panel">
+          <h3>参考资料源</h3>
+          <p class="muted">本资料按新手学习顺序重新组织，概念底层参考这些权威文档。</p>
+          <ul class="source-list">
+            ${sources.map(source => `<li><a href="${source.url}" target="_blank" rel="noreferrer">${escapeHtml(source.name)}</a></li>`).join("")}
+          </ul>
+        </article>
+      `;
+    }
+
+    function drawMap() {
+      const width = canvas.width;
+      const height = canvas.height;
+      ctx.clearRect(0, 0, width, height);
+      ctx.fillStyle = "#fbfcfb";
+      ctx.fillRect(0, 0, width, height);
+
+      const nodes = lessons.map((lesson, index) => {
+        const angle = (index / lessons.length) * Math.PI * 2 - Math.PI / 2;
+        const radiusX = width * 0.38;
+        const radiusY = height * 0.32;
+        return {
+          x: width / 2 + Math.cos(angle) * radiusX,
+          y: height / 2 + Math.sin(angle) * radiusY,
+          lesson,
+          index
+        };
+      });
+
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = "#d9ded8";
+      for (let i = 0; i < nodes.length; i += 1) {
+        const current = nodes[i];
+        const next = nodes[(i + 1) % nodes.length];
+        ctx.beginPath();
+        ctx.moveTo(current.x, current.y);
+        ctx.lineTo(next.x, next.y);
+        ctx.stroke();
+      }
+
+      nodes.forEach(node => {
+        const active = node.index === state.activeIndex;
+        const done = isLessonDone(node.lesson);
+        ctx.beginPath();
+        ctx.arc(node.x, node.y, active ? 16 : 12, 0, Math.PI * 2);
+        ctx.fillStyle = done ? "#178760" : active ? "#2563eb" : "#ffffff";
+        ctx.fill();
+        ctx.lineWidth = active ? 4 : 2;
+        ctx.strokeStyle = active ? "#17212b" : "#b9c2ba";
+        ctx.stroke();
+        ctx.fillStyle = done || active ? "#ffffff" : "#17212b";
+        ctx.font = "700 12px system-ui";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(String(node.index + 1), node.x, node.y);
+      });
+
+      ctx.fillStyle = "#17212b";
+      ctx.font = "800 16px system-ui";
+      ctx.textAlign = "center";
+      ctx.fillText("从语法到项目", width / 2, height / 2 - 8);
+      ctx.fillStyle = "#65717f";
+      ctx.font = "13px system-ui";
+      ctx.fillText("每课完成概念、例子、练习、测验、提示词", width / 2, height / 2 + 14);
+    }
+
+    function setFeedback(message, good) {
+      const feedback = document.getElementById("practiceFeedback");
+      if (!feedback) return;
+      feedback.textContent = message;
+      feedback.className = "feedback " + (good ? "good" : "bad");
+    }
+
+    function copyPrompt(lesson) {
+      if (!navigator.clipboard || !navigator.clipboard.writeText) {
+        mark(lesson.id, "prompt");
+        showToast("当前浏览器不支持自动复制，可以手动选中复制");
+        return;
+      }
+      navigator.clipboard.writeText(lesson.prompt).then(() => {
+        mark(lesson.id, "prompt");
+        showToast("提示词已复制");
+      }).catch(() => {
+        showToast("浏览器不允许自动复制，可以手动选中复制");
+      });
+    }
+
+    function showToast(message) {
+      toast.textContent = message;
+      toast.classList.add("show");
+      window.setTimeout(() => toast.classList.remove("show"), 1800);
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function render() {
+      renderHeader();
+      renderTabs();
+      renderNav();
+      renderProgress();
+      drawMap();
+      renderTabContent();
+    }
+
+    document.querySelectorAll(".tab-button").forEach(button => {
+      button.addEventListener("click", () => {
+        state.activeTab = button.dataset.tab;
+        state.selectedSteps = [];
+        state.scenarioAnswers = {};
+        state.quizAnswers = {};
+        saveState();
+        render();
+      });
+    });
+
+    document.getElementById("prevLesson").addEventListener("click", () => {
+      if (state.activeIndex > 0) {
+        state.activeIndex -= 1;
+        state.activeTab = "concept";
+        saveState();
+        render();
+      }
+    });
+
+    document.getElementById("nextLesson").addEventListener("click", () => {
+      if (state.activeIndex < lessons.length - 1) {
+        state.activeIndex += 1;
+        state.activeTab = "concept";
+        saveState();
+        render();
+      }
+    });
+
+    document.getElementById("markLesson").addEventListener("click", () => {
+      const lesson = getLesson();
+      ["concept", "example", "practice", "quiz", "prompt"].forEach(key => mark(lesson.id, key));
+      render();
+      showToast("本课已标记完成");
+    });
+
+    document.getElementById("copyPromptTop").addEventListener("click", () => {
+      copyPrompt(getLesson());
+    });
+
+    document.getElementById("resetProgress").addEventListener("click", () => {
+      const ok = window.confirm("确定要重置学习进度吗？");
+      if (!ok) return;
+      state.progress = {};
+      state.activeIndex = 0;
+      state.activeTab = "concept";
+      saveState();
+      render();
+      showToast("进度已重置");
+    });
+
+    render();
+  </script>
+</body>
+</html>
