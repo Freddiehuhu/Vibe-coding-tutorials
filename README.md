@@ -12,6 +12,8 @@
 
 ## 内容
 
+### Vibe Coding 基础教程
+
 - 新手实操路线
 - 变量、函数、对象、数组
 - 条件判断、循环
@@ -22,6 +24,15 @@
 - 数据库表
 - 环境变量
 - 综合项目生成练习
+
+### Agent Skills with Anthropic 伴学资料
+
+- DeepLearning.AI x Anthropic 课程公开大纲梳理
+- Skills、Tools、MCP server、Subagents 的区别
+- 预置 Skills 拆解方法
+- 自定义 SKILL.md 草稿练习
+- Claude API、Claude Code、Agent SDK 的学习路径
+- 每章交互练习、小测验和可复用提示词
 
 ## 本地打开
 
@@ -41,3 +52,7 @@
 保存后，页面地址通常是：
 
 `https://你的用户名.github.io/仓库名/`
+
+本仓库里的 Agent Skills 伴学资料地址是：
+
+`https://你的用户名.github.io/仓库名/agent-skills-with-anthropic/`

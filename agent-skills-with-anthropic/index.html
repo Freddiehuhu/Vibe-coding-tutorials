@@ -1,0 +1,1972 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Agent Skills with Anthropic 交互式伴学资料</title>
+  <style>
+    :root {
+      --bg: #f6f7f2;
+      --panel: #ffffff;
+      --panel-soft: #fbfbf7;
+      --ink: #18201c;
+      --muted: #5b665f;
+      --line: #dfe5db;
+      --green: #2f7d59;
+      --green-soft: #e4f2ea;
+      --blue: #276aa8;
+      --blue-soft: #e4eff8;
+      --amber: #a15f10;
+      --amber-soft: #fff0d7;
+      --red: #b4473f;
+      --red-soft: #fde8e4;
+      --shadow: 0 12px 28px rgba(25, 32, 28, 0.08);
+      --radius: 8px;
+      color-scheme: light;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background:
+        linear-gradient(180deg, rgba(39, 106, 168, 0.08), transparent 260px),
+        var(--bg);
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      line-height: 1.55;
+    }
+
+    button,
+    input,
+    textarea,
+    select {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    .app {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 330px minmax(0, 1fr);
+    }
+
+    .sidebar {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow: auto;
+      border-right: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.86);
+      backdrop-filter: blur(14px);
+      padding: 20px 16px;
+    }
+
+    .brand {
+      display: grid;
+      gap: 10px;
+      padding: 6px 6px 18px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .eyebrow {
+      color: var(--green);
+      font-weight: 750;
+      font-size: 0.78rem;
+      letter-spacing: 0;
+      text-transform: uppercase;
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      margin-top: 0;
+    }
+
+    h1 {
+      margin-bottom: 0;
+      font-size: 1.45rem;
+      line-height: 1.22;
+      letter-spacing: 0;
+    }
+
+    .brand p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.94rem;
+    }
+
+    .progress-block {
+      margin: 16px 6px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .progress-line {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      color: var(--muted);
+      font-size: 0.88rem;
+    }
+
+    .progress-track {
+      height: 10px;
+      border-radius: 999px;
+      background: #e9ede6;
+      overflow: hidden;
+      border: 1px solid var(--line);
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--green), var(--blue));
+      transition: width 180ms ease;
+    }
+
+    .lesson-list {
+      display: grid;
+      gap: 8px;
+      padding: 0 4px 20px;
+    }
+
+    .lesson-button {
+      width: 100%;
+      min-height: 72px;
+      display: grid;
+      grid-template-columns: 34px minmax(0, 1fr);
+      gap: 10px;
+      text-align: left;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fff;
+      color: var(--ink);
+      padding: 10px;
+      transition: border-color 160ms ease, background 160ms ease, transform 160ms ease;
+    }
+
+    .lesson-button:hover {
+      transform: translateY(-1px);
+      border-color: rgba(47, 125, 89, 0.45);
+    }
+
+    .lesson-button.active {
+      background: var(--green-soft);
+      border-color: rgba(47, 125, 89, 0.75);
+    }
+
+    .lesson-button.done .lesson-number {
+      background: var(--green);
+      color: #fff;
+      border-color: var(--green);
+    }
+
+    .lesson-number {
+      width: 32px;
+      height: 32px;
+      border-radius: 999px;
+      display: grid;
+      place-items: center;
+      border: 1px solid var(--line);
+      color: var(--muted);
+      font-weight: 800;
+      font-size: 0.82rem;
+      flex: 0 0 auto;
+    }
+
+    .lesson-label {
+      min-width: 0;
+      display: grid;
+      gap: 4px;
+    }
+
+    .lesson-label strong {
+      font-size: 0.94rem;
+      line-height: 1.28;
+      font-weight: 760;
+    }
+
+    .lesson-label span {
+      color: var(--muted);
+      font-size: 0.78rem;
+    }
+
+    .main {
+      min-width: 0;
+      padding: 26px;
+    }
+
+    .workspace {
+      max-width: 1180px;
+      margin: 0 auto;
+      display: grid;
+      gap: 18px;
+    }
+
+    .top-panel {
+      display: grid;
+      grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.65fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .lesson-hero,
+    .visual-panel,
+    .content-panel,
+    .source-panel {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--panel);
+      box-shadow: var(--shadow);
+    }
+
+    .lesson-hero {
+      padding: 22px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .meta-row {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 28px;
+      border-radius: 999px;
+      padding: 4px 10px;
+      color: #214137;
+      background: var(--green-soft);
+      border: 1px solid rgba(47, 125, 89, 0.22);
+      font-size: 0.82rem;
+      font-weight: 700;
+    }
+
+    .pill.blue {
+      color: #244668;
+      background: var(--blue-soft);
+      border-color: rgba(39, 106, 168, 0.22);
+    }
+
+    .pill.amber {
+      color: #6e430e;
+      background: var(--amber-soft);
+      border-color: rgba(161, 95, 16, 0.22);
+    }
+
+    .lesson-hero h2 {
+      margin: 0;
+      font-size: 1.75rem;
+      line-height: 1.22;
+      letter-spacing: 0;
+    }
+
+    .goal {
+      margin: 0;
+      color: var(--muted);
+      font-size: 1rem;
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding-top: 4px;
+    }
+
+    .action-button,
+    .secondary-button,
+    .icon-button {
+      min-height: 38px;
+      border-radius: var(--radius);
+      border: 1px solid transparent;
+      padding: 8px 12px;
+      font-weight: 750;
+      background: var(--green);
+      color: #fff;
+    }
+
+    .secondary-button {
+      background: #fff;
+      color: var(--ink);
+      border-color: var(--line);
+    }
+
+    .secondary-button:hover,
+    .icon-button:hover {
+      border-color: rgba(39, 106, 168, 0.46);
+      background: var(--blue-soft);
+    }
+
+    .action-button:hover {
+      background: #27694c;
+    }
+
+    .icon-button {
+      width: 40px;
+      min-width: 40px;
+      padding: 0;
+      display: grid;
+      place-items: center;
+      background: #fff;
+      color: var(--ink);
+      border-color: var(--line);
+    }
+
+    .visual-panel {
+      padding: 16px;
+      display: grid;
+      gap: 12px;
+      background: linear-gradient(180deg, #ffffff, #f8fbf6);
+    }
+
+    .visual-panel h3 {
+      margin: 0;
+      font-size: 1rem;
+    }
+
+    .visual-panel p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.88rem;
+    }
+
+    canvas {
+      width: 100%;
+      height: 230px;
+      display: block;
+      border-radius: var(--radius);
+      border: 1px solid var(--line);
+      background: #fbfbf7;
+    }
+
+    .tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      border-bottom: 1px solid var(--line);
+      padding: 14px 14px 0;
+      background: var(--panel);
+      border-radius: var(--radius) var(--radius) 0 0;
+    }
+
+    .tab-button {
+      min-height: 40px;
+      border: 1px solid transparent;
+      border-bottom: 0;
+      border-radius: var(--radius) var(--radius) 0 0;
+      background: transparent;
+      color: var(--muted);
+      padding: 9px 13px;
+      font-weight: 750;
+    }
+
+    .tab-button.active {
+      background: var(--panel-soft);
+      color: var(--ink);
+      border-color: var(--line);
+    }
+
+    .content-panel {
+      overflow: hidden;
+    }
+
+    .content-body {
+      padding: 20px;
+      background: var(--panel-soft);
+      min-height: 420px;
+    }
+
+    .section-title {
+      margin: 0 0 12px;
+      font-size: 1.15rem;
+    }
+
+    .concept-list {
+      display: grid;
+      gap: 10px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .concept-list li,
+    .notice,
+    .feedback,
+    .practice-row,
+    .quiz-item,
+    .source-item {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fff;
+      padding: 12px;
+    }
+
+    .concept-list li {
+      display: grid;
+      grid-template-columns: 10px minmax(0, 1fr);
+      gap: 10px;
+      align-items: start;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: var(--blue);
+      margin-top: 7px;
+    }
+
+    .example-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(260px, 0.72fr);
+      gap: 14px;
+      align-items: start;
+    }
+
+    pre {
+      margin: 0;
+      white-space: pre-wrap;
+      word-break: break-word;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #151a17;
+      color: #ecf5ed;
+      padding: 14px;
+      overflow: auto;
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+
+    code {
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+      font-size: 0.92em;
+    }
+
+    .expected {
+      display: grid;
+      gap: 10px;
+    }
+
+    .expected h3,
+    .practice h3 {
+      margin: 0;
+      font-size: 1rem;
+    }
+
+    .expected p {
+      margin: 0;
+      color: var(--muted);
+    }
+
+    .practice {
+      display: grid;
+      gap: 12px;
+    }
+
+    .practice-row {
+      display: grid;
+      gap: 8px;
+    }
+
+    .practice-row label,
+    .quiz-options label {
+      display: flex;
+      gap: 9px;
+      align-items: flex-start;
+      color: var(--ink);
+    }
+
+    .practice-row input[type="text"],
+    .practice-row textarea,
+    .practice-row select {
+      width: 100%;
+      min-height: 42px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fff;
+      padding: 9px 10px;
+      color: var(--ink);
+    }
+
+    .practice-row textarea {
+      min-height: 120px;
+      resize: vertical;
+    }
+
+    .practice-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .feedback {
+      color: var(--muted);
+      min-height: 50px;
+      display: flex;
+      align-items: center;
+    }
+
+    .feedback.good {
+      color: #174f36;
+      background: var(--green-soft);
+      border-color: rgba(47, 125, 89, 0.36);
+    }
+
+    .feedback.warn {
+      color: #70420b;
+      background: var(--amber-soft);
+      border-color: rgba(161, 95, 16, 0.32);
+    }
+
+    .feedback.bad {
+      color: #842f2a;
+      background: var(--red-soft);
+      border-color: rgba(180, 71, 63, 0.28);
+    }
+
+    .quiz-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .quiz-item {
+      display: grid;
+      gap: 10px;
+    }
+
+    .quiz-item strong {
+      line-height: 1.35;
+    }
+
+    .quiz-options {
+      display: grid;
+      gap: 8px;
+    }
+
+    .source-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .source-item a {
+      color: var(--blue);
+      font-weight: 800;
+      text-decoration: none;
+    }
+
+    .source-item a:hover {
+      text-decoration: underline;
+    }
+
+    .mini-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .footer-note {
+      color: var(--muted);
+      font-size: 0.88rem;
+      padding: 0 2px 18px;
+    }
+
+    .kbd {
+      display: inline-flex;
+      border: 1px solid var(--line);
+      border-bottom-width: 2px;
+      background: #fff;
+      border-radius: 6px;
+      padding: 1px 6px;
+      font-size: 0.82em;
+      color: var(--muted);
+    }
+
+    @media (max-width: 980px) {
+      .app {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        position: relative;
+        height: auto;
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .lesson-list {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .top-panel,
+      .example-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .main {
+        padding: 14px;
+      }
+
+      .lesson-list,
+      .mini-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .lesson-hero h2 {
+        font-size: 1.35rem;
+      }
+
+      .tabs {
+        overflow-x: auto;
+        flex-wrap: nowrap;
+      }
+
+      .tab-button {
+        flex: 0 0 auto;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="eyebrow">DeepLearning.AI x Anthropic</div>
+        <h1>Agent Skills 交互式伴学资料</h1>
+        <p>基于公开课程大纲和官方 Skills 资料改写。公开页显示讲师为 Anthropic 的 Elie Schoppik，适合边看课边做自己的 agent 能力包。</p>
+      </div>
+
+      <div class="progress-block" aria-live="polite">
+        <div class="progress-line">
+          <span>学习进度</span>
+          <strong id="progressText">0 / 12</strong>
+        </div>
+        <div class="progress-track" aria-hidden="true">
+          <div class="progress-fill" id="progressFill"></div>
+        </div>
+      </div>
+
+      <div class="lesson-list" id="lessonList"></div>
+    </aside>
+
+    <main class="main">
+      <div class="workspace">
+        <section class="top-panel" aria-label="当前章节">
+          <div class="lesson-hero">
+            <div class="meta-row" id="metaRow"></div>
+            <h2 id="lessonTitle"></h2>
+            <p class="goal" id="lessonGoal"></p>
+            <div class="hero-actions">
+              <button class="action-button" id="completeBtn" type="button">标记本章完成</button>
+              <button class="secondary-button" id="prevBtn" type="button">上一章</button>
+              <button class="secondary-button" id="nextBtn" type="button">下一章</button>
+              <button class="icon-button" id="resetBtn" type="button" title="重置所有进度" aria-label="重置所有进度">↺</button>
+            </div>
+          </div>
+
+          <div class="visual-panel">
+            <div>
+              <h3>Skills 如何被 agent 加载</h3>
+              <p id="visualHint">移动鼠标到节点上，看每个部分在工作流里的位置。</p>
+            </div>
+            <canvas id="skillCanvas" width="640" height="420" aria-label="Agent Skills 结构示意图"></canvas>
+          </div>
+        </section>
+
+        <section class="content-panel" aria-label="学习内容">
+          <nav class="tabs" id="tabs" aria-label="章节标签"></nav>
+          <div class="content-body" id="contentBody"></div>
+        </section>
+
+        <p class="footer-note">
+          说明：这是一份“伴学版”资料，用来帮你理解章节主题、做练习和形成自己的项目提示词。它不替代 DeepLearning.AI 课程视频、课程作业或登录后材料；公开页显示课程讲师为 Anthropic 的 Elie Schoppik。
+        </p>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const sources = [
+      {
+        label: "DeepLearning.AI: Agent Skills with Anthropic",
+        url: "https://www.deeplearning.ai/courses/agent-skills-with-anthropic",
+        note: "课程标题、讲师、时长、章节大纲和学习目标来自公开课程页。"
+      },
+      {
+        label: "Anthropic: Introducing Agent Skills",
+        url: "https://claude.com/blog/skills",
+        note: "Skills 的基本定义、按需加载、可组合、可移植和产品覆盖来自 Anthropic 官方介绍。"
+      },
+      {
+        label: "Anthropic skills repository",
+        url: "https://github.com/anthropics/skills",
+        note: "SKILL.md 文件结构、示例技能和仓库说明来自 Anthropic 官方 GitHub 仓库。"
+      }
+    ];
+
+    const lessons = [
+      {
+        id: "intro",
+        title: "Introduction",
+        kind: "Video",
+        duration: "4m",
+        tags: ["课程定位", "Agent Skills", "复用能力"],
+        goal: "知道这门课要解决什么问题：怎样把反复解释给 AI 的流程，打包成 agent 可以按需调用的能力。",
+        concepts: [
+          "Skill 不是一个普通提示词，而是一组可复用的任务说明、资源和可选脚本。",
+          "它适合保存稳定流程，例如代码评审规范、菜谱生成规则、文档排版风格、数据分析步骤。",
+          "学习这门课时，可以把每章都映射到一个问题：我未来做产品时，哪些工作值得沉淀成 skill？",
+          "对初学者来说，先理解边界最重要：skill 负责教 agent 怎么做一类任务，不负责替代产品、数据库或真实 API。"
+        ],
+        example: [
+          "一次性提示词：",
+          "请帮我检查这个菜谱 App 的需求，看看哪里不合理。",
+          "",
+          "Skill 化之后：",
+          "recipe-product-reviewer/",
+          "  SKILL.md        # 什么时候使用、评审步骤、输出格式",
+          "  references/",
+          "    mvp-checklist.md",
+          "    recipe-edge-cases.md",
+          "",
+          "以后你只要说：",
+          "请用 recipe-product-reviewer 检查这个新需求。"
+        ].join("\n"),
+        expected: "你应该能区分“临时问 AI 一个问题”和“给 AI 装一个稳定工作习惯”。",
+        practice: {
+          type: "scenario",
+          title: "判断是否值得做成 Skill",
+          question: "下面哪个任务最适合先做成一个 skill？",
+          options: [
+            "今天心情不好，想让 AI 陪聊五分钟",
+            "每次生成菜谱功能前，都按同一套边界条件检查食材匹配、调料提醒和失败兜底",
+            "问 AI 现在上海天气怎么样"
+          ],
+          answer: 1,
+          success: "对。稳定、会重复、可检查的流程，最值得优先 skill 化。",
+          hint: "想想哪个任务会反复出现，而且每次都希望输出格式稳定。"
+        },
+        quiz: [
+          {
+            q: "这门课的核心对象更接近下面哪一个？",
+            options: ["可复用的 agent 能力包", "单次聊天记录", "一个数据库表"],
+            answer: 0,
+            explain: "Skill 的价值在于把稳定流程和资源打包，让 agent 以后按需加载。"
+          }
+        ],
+        prompt: "我正在学习 Agent Skills。请帮我列出我正在做的项目里最适合沉淀成 skill 的 5 个重复流程，并按“重复频率、是否有稳定步骤、是否需要参考资料、是否容易验证”打分。",
+        sourceNote: "本章对应公开大纲里的 Introduction。这里将课程定位改写成适合 vibe coding 初学者的学习入口。"
+      },
+      {
+        id: "materials",
+        title: "Course Materials",
+        kind: "Reading",
+        duration: "10m",
+        tags: ["材料准备", "学习环境", "记录方式"],
+        goal: "学会用开发者视角读课程材料：先知道有哪些文件、要运行什么、产出物应该长什么样。",
+        concepts: [
+          "课程材料不只是下载后立刻运行，更重要的是先看目录、文件名和每个练习的目标。",
+          "遇到陌生项目时，先找 README、示例输入、示例输出、配置文件和运行命令。",
+          "学习 agent skills 时，建议同时维护一份自己的 notes：每章记录一个“可复用规则”。",
+          "不要把 API key、账号密码、个人 token 写进教程或仓库；这些应该放进环境变量或本地配置。"
+        ],
+        example: [
+          "推荐你的学习目录：",
+          "",
+          "agent-skills-notes/",
+          "  course-outline.md",
+          "  my-skill-ideas.md",
+          "  experiments/",
+          "    recipe-app-skill/",
+          "      SKILL.md",
+          "      references/",
+          "        ingredient-matching.md",
+          "",
+          "每章结束后补一句：",
+          "- 我能拿这章知识改进哪个真实产品功能？"
+        ].join("\n"),
+        expected: "你会建立一个自己的学习工作区，而不是只收藏课程链接。",
+        practice: {
+          type: "checklist",
+          title: "建立伴学文件夹",
+          items: [
+            "打开课程公开页，确认课程标题和章节顺序",
+            "新建一份 my-skill-ideas.md，记录未来能做成 skill 的流程",
+            "给你的菜谱 App 写 3 条 skill 候选：菜谱生成、菜谱质量检查、用户反馈总结",
+            "记录哪些信息不能上传到公开仓库，例如 API key、用户隐私数据"
+          ],
+          success: "很好。你已经把“看课”转换成了“积累自己的 agent 工作流资产”。"
+        },
+        quiz: [
+          {
+            q: "为什么学习材料阶段要先看目录和 README？",
+            options: ["为了跳过所有练习", "为了理解项目结构、运行方式和产出目标", "为了复制所有代码到聊天框"],
+            answer: 1,
+            explain: "开发者读材料时先建立地图，后面调试和复用会轻松很多。"
+          }
+        ],
+        prompt: "请扮演我的学习助教。根据我正在学习的 Agent Skills 课程，帮我建立一份 Markdown 学习笔记模板，包含：章节目标、关键词、我自己的产品应用、可做成 skill 的规则、还没懂的问题。",
+        sourceNote: "本章对应公开大纲里的 Course Materials。具体登录后材料以课程平台为准。"
+      },
+      {
+        id: "why-skills-1",
+        title: "Why Use Skills - Part I",
+        kind: "Video",
+        duration: "11m",
+        tags: ["为什么需要", "上下文管理", "稳定流程"],
+        goal: "理解为什么只靠长提示词会越来越乱，而 skill 可以把稳定流程变成可加载的上下文。",
+        concepts: [
+          "长提示词适合探索，skill 适合沉淀已经验证过的流程。",
+          "Agent 工作时不应该一次性读入所有资料，而应该根据任务只加载相关资料。",
+          "这类按需加载的思路常被称为 progressive disclosure，也就是逐步披露上下文。",
+          "如果你每次都要重复解释同一套产品规则，说明它可能已经到了该 skill 化的时候。"
+        ],
+        example: [
+          "问题：",
+          "你每次让 AI 生成菜谱，都要重复说：",
+          "- 优先用完用户输入食材",
+          "- 食材太多时拆成多道菜",
+          "- 缺少关键调料要提醒",
+          "- 不确定时说明假设",
+          "",
+          "Skill 的做法：",
+          "把这些规则写进 SKILL.md，必要时再把边界条件放进 references/ingredient-policy.md。",
+          "",
+          "结果：",
+          "你不用每次重写整段规则，agent 也不需要在不相关任务里加载它。"
+        ].join("\n"),
+        expected: "你会把 skill 看成“长期规则容器”，而不是“更长的提示词”。",
+        practice: {
+          type: "order",
+          title: "按需加载流程排序",
+          items: [
+            "用户提出一个具体任务",
+            "Agent 根据任务匹配可用 skill 的描述",
+            "Agent 读取匹配 skill 的 SKILL.md",
+            "如果需要，继续读取 references 或运行脚本",
+            "Agent 产出结果并按 skill 的验收标准检查"
+          ],
+          success: "顺序正确。Skill 的重点就是先匹配，再逐步加载需要的内容。"
+        },
+        quiz: [
+          {
+            q: "什么时候更适合把提示词沉淀为 skill？",
+            options: ["只问一次的小问题", "稳定、重复、需要统一标准的流程", "无法描述目标的时候"],
+            answer: 1,
+            explain: "Skill 最适合重复出现、步骤稳定、质量标准明确的任务。"
+          }
+        ],
+        prompt: "请帮我审查下面这段长提示词，判断哪些部分应该保留在用户请求里，哪些部分应该沉淀成 skill 的固定规则。请用表格输出：内容片段、是否适合 skill 化、原因、建议位置。提示词如下：{{粘贴你的长提示词}}",
+        sourceNote: "本章根据课程 Why Use Skills - Part I 的公开主题，结合 Anthropic 对按需加载和上下文效率的官方说明改写。"
+      },
+      {
+        id: "why-skills-2",
+        title: "Why Use Skills - Part II",
+        kind: "Video",
+        duration: "11m",
+        tags: ["可组合", "可移植", "脚本和资源"],
+        goal: "理解 Skill 不只是文字说明，它还能包含参考资料、模板和脚本，让 agent 更稳定地完成专业任务。",
+        concepts: [
+          "一个 skill 文件夹可以包含 SKILL.md、references、scripts、templates、assets 等资源。",
+          "文字适合表达判断规则，脚本适合处理确定性计算，模板适合保证输出格式。",
+          "好的 skill 通常很窄：只解决一个清晰任务，而不是试图变成一个万能大脑。",
+          "多个 skills 可以组合使用，例如“数据清洗 skill”加“报告写作 skill”。"
+        ],
+        example: [
+          "recipe-generator-skill/",
+          "  SKILL.md",
+          "  references/",
+          "    ingredient-matching-rules.md",
+          "    seasoning-basics.md",
+          "  templates/",
+          "    recipe-output.md",
+          "  scripts/",
+          "    score_ingredient_overlap.js",
+          "",
+          "规则：",
+          "- 判断和解释写在 Markdown",
+          "- 可重复计算交给脚本",
+          "- 用户可见结果套模板"
+        ].join("\n"),
+        expected: "你会开始用“说明 + 参考资料 + 模板 + 脚本”的方式设计 agent 能力，而不是把所有内容塞进一段话。",
+        practice: {
+          type: "compare",
+          title: "选择好的 Skill 边界",
+          question: "下面哪些设计更健康？可以多选。",
+          options: [
+            { text: "一个 skill 专门检查菜谱是否尽量使用用户输入食材", correct: true },
+            { text: "一个 skill 同时做菜谱、社交、支付、地图、幼儿教育和运营增长", correct: false },
+            { text: "把固定输出格式放进 templates/recipe-output.md", correct: true },
+            { text: "把真实用户手机号作为示例数据写进公开 skill", correct: false }
+          ],
+          success: "选择正确。窄边界、可复用模板、保护隐私，是初学者做 skill 的三条实用底线。"
+        },
+        quiz: [
+          {
+            q: "为什么脚本有时比纯自然语言更适合放进 skill？",
+            options: ["脚本可以处理确定性计算和格式转换", "脚本一定比 AI 更有创造力", "脚本可以替代所有产品需求"],
+            answer: 0,
+            explain: "计算、解析、格式转换这类稳定任务，用脚本通常更可靠。"
+          }
+        ],
+        prompt: "请帮我把“菜谱生成”拆成一个 skill 文件夹设计。请输出目录结构，并说明每个文件应该放什么：SKILL.md、references、templates、scripts。要求适合一个初学者逐步实现。",
+        sourceNote: "本章对应 Why Use Skills - Part II，并结合 Anthropic 官方对 Skills 可组合、可移植、可包含代码资源的说明。"
+      },
+      {
+        id: "skills-vs",
+        title: "Skills vs Tools, MCP, and Subagents",
+        kind: "Video",
+        duration: "11m",
+        tags: ["概念边界", "Tools", "MCP", "Subagents"],
+        goal: "分清 Skill、工具、MCP server 和 subagent 的区别，避免一开始就把架构想复杂。",
+        concepts: [
+          "Skill 主要是教 agent 怎么做一类任务：规则、流程、参考资料和模板。",
+          "Tool 是 agent 可以调用的具体能力，例如查天气、读文件、发请求、运行测试。",
+          "MCP server 更像标准化连接器，让 agent 访问外部系统、数据源或服务。",
+          "Subagent 是把任务分给另一个专门角色处理，常用于隔离上下文或并行处理。",
+          "产品初期可以先用 skill 表达流程，等需要真实外部数据或动作时再接 tool / MCP。"
+        ],
+        example: [
+          "做一个菜谱 App 时：",
+          "",
+          "Skill:",
+          "  “如何根据冰箱食材生成靠谱菜谱”的判断流程。",
+          "",
+          "Tool:",
+          "  一个函数 getNearbyRestaurants(location, dishName)。",
+          "",
+          "MCP server:",
+          "  连接餐厅数据库、地图服务或 Notion 菜谱库。",
+          "",
+          "Subagent:",
+          "  一个专门负责营养审核或幼儿友好表达的 agent。"
+        ].join("\n"),
+        expected: "你会知道某个需求应该先写规则、先接接口，还是先分配给另一个 agent。",
+        practice: {
+          type: "classify",
+          title: "把能力放到正确盒子里",
+          categories: ["Skill", "Tool", "MCP server", "Subagent"],
+          items: [
+            { text: "一份 recipe-output.md，规定菜谱输出格式", answer: "Skill" },
+            { text: "调用 Yelp 或 Google Maps 查餐厅的函数", answer: "Tool" },
+            { text: "让 agent 标准化访问外部菜谱数据库的连接服务", answer: "MCP server" },
+            { text: "派一个独立角色专门检查儿童教育内容是否合适", answer: "Subagent" }
+          ],
+          success: "分类正确。这个边界感会直接影响你后面做产品时的复杂度。"
+        },
+        quiz: [
+          {
+            q: "如果只是想让 AI 以后都按同一套格式生成菜谱，优先考虑什么？",
+            options: ["Skill", "MCP server", "支付系统"],
+            answer: 0,
+            explain: "固定流程和格式优先 skill 化。需要访问外部系统时，再考虑 tool 或 MCP。"
+          }
+        ],
+        prompt: "请看我的这个功能需求：{{粘贴需求}}。帮我判断其中哪些应该做成 Skill，哪些需要 Tool，哪些可能需要 MCP server，哪些适合交给 Subagent。请给出初学者版本和进阶版本两套架构。",
+        sourceNote: "本章对应课程中 Skills 与 Tools、MCP、Subagents 的比较主题。分类解释为伴学改写。"
+      },
+      {
+        id: "prebuilt",
+        title: "Exploring Pre-Built Skills",
+        kind: "Video",
+        duration: "7m",
+        tags: ["预置 Skills", "拆解案例", "迁移模式"],
+        goal: "学会先拆解已有 skill，再模仿它的目录、描述、规则和验收方式。",
+        concepts: [
+          "看预置 skill 时，不要只看它能做什么，更要看它如何描述触发条件。",
+          "SKILL.md 的 description 很关键，agent 会用它判断什么时候加载这个 skill。",
+          "复杂 skill 往往把详细参考资料放到 references，把可重复动作放到 scripts。",
+          "拆解别人的 skill 时，重点提炼模式：输入是什么、步骤是什么、输出如何验收。"
+        ],
+        example: [
+          "拆解一个预置 skill 的读法：",
+          "",
+          "1. 先看 SKILL.md 顶部 frontmatter",
+          "2. 找 description 中的触发场景",
+          "3. 读主要步骤，但不要急着改",
+          "4. 看 references 和 scripts 是否被按需引用",
+          "5. 用一个很小的任务测试它的边界",
+          "6. 记录你能迁移到自己项目的模式"
+        ].join("\n"),
+        expected: "你会把预置 skill 当成学习样板，而不是黑盒功能。",
+        practice: {
+          type: "checklist",
+          title: "预置 Skill 拆解清单",
+          items: [
+            "找到一个示例 skill 的 SKILL.md",
+            "圈出 name 和 description",
+            "写下它最适合处理的 1 个任务",
+            "写下它不应该处理的 1 个任务",
+            "记录它有没有 references、scripts 或 templates",
+            "把一个可迁移模式改写到你的菜谱 App"
+          ],
+          success: "完成。你已经从“会用”进入“会拆解、会迁移”的状态。"
+        },
+        quiz: [
+          {
+            q: "看预置 skill 时，最应该优先关注哪个字段？",
+            options: ["description", "文件夹颜色", "README 字数"],
+            answer: 0,
+            explain: "description 会影响 agent 何时选择这个 skill，是触发边界的核心。"
+          }
+        ],
+        prompt: "请帮我拆解下面这个 SKILL.md。请输出：触发条件、任务边界、主要步骤、依赖资源、质量检查、我可以迁移到自己项目的 3 个模式。内容如下：{{粘贴 SKILL.md}}",
+        sourceNote: "本章对应 Exploring Pre-Built Skills，并参考 Anthropic skills 官方仓库对示例技能的说明。"
+      },
+      {
+        id: "custom",
+        title: "Creating Custom Skills",
+        kind: "Video",
+        duration: "16m",
+        tags: ["自定义 Skill", "SKILL.md", "最佳实践"],
+        goal: "亲手设计一个最小可用的 custom skill，并知道如何写清楚触发条件、步骤和验收标准。",
+        concepts: [
+          "最小 skill 通常就是一个文件夹加一个 SKILL.md。",
+          "SKILL.md 顶部需要 name 和 description，正文写 agent 应遵循的说明。",
+          "description 要具体，说明“什么时候使用”，不要只写一个模糊标题。",
+          "先做窄场景、可验证的 skill，再逐步加 references、templates 或 scripts。",
+          "每次修改 skill 后，都要用小任务回归测试，确认它没有越界。"
+        ],
+        example: [
+          "---",
+          "name: recipe-ingredient-matcher",
+          "description: Use this skill when generating recipes from user-provided fridge ingredients, especially when the answer must maximize ingredient usage and explain missing seasonings.",
+          "---",
+          "",
+          "# Recipe Ingredient Matcher",
+          "",
+          "When active:",
+          "1. List all user-provided ingredients.",
+          "2. Prefer recipes that use every ingredient when realistic.",
+          "3. If there are too many ingredients, propose multiple dishes.",
+          "4. Clearly separate required seasonings from optional ingredients.",
+          "5. State assumptions and substitutions.",
+          "",
+          "Output sections:",
+          "- Ingredient coverage",
+          "- Recommended dishes",
+          "- Missing seasonings",
+          "- Cooking steps",
+          "- Why this recommendation fits"
+        ].join("\n"),
+        expected: "你会拥有一个可继续迭代的 skill 草稿，而不是只知道概念。",
+        practice: {
+          type: "skillDraft",
+          title: "生成你的第一个 SKILL.md 草稿",
+          success: "草稿已生成。下一步可以把它复制到真实 skill 文件夹里，再用小任务测试。"
+        },
+        quiz: [
+          {
+            q: "一个最小 custom skill 至少需要什么？",
+            options: ["一个包含 SKILL.md 的文件夹", "一个完整数据库", "一个移动 App"],
+            answer: 0,
+            explain: "最小 skill 可以非常轻量，先从 SKILL.md 开始。"
+          },
+          {
+            q: "description 写得太宽泛会怎样？",
+            options: ["可能导致触发不准或边界不清", "一定会让模型更聪明", "可以自动连接所有 API"],
+            answer: 0,
+            explain: "description 是匹配入口，越具体越容易在正确场景触发。"
+          }
+        ],
+        prompt: "请根据以下信息帮我生成一个 custom skill 草稿：任务名称：{{任务}}；什么时候使用：{{触发场景}}；输入：{{输入}}；输出：{{输出}}；质量标准：{{标准}}。要求包含 YAML frontmatter、步骤、边界、验收清单和 2 个示例请求。",
+        sourceNote: "本章对应 Creating Custom Skills，并参考 Anthropic 官方仓库中 SKILL.md 基本结构说明。"
+      },
+      {
+        id: "api",
+        title: "Skills with the Claude API",
+        kind: "Video",
+        duration: "12m",
+        tags: ["API", "文件", "自动化"],
+        goal: "理解 API 场景下为什么 skill 需要和文件、代码执行环境、版本管理、验收结果一起考虑。",
+        concepts: [
+          "API 适合把 skill 接进真实产品流程，例如用户上传文件后自动生成报告。",
+          "当 skill 需要处理文件或运行脚本时，要明确运行环境、文件访问范围和错误处理。",
+          "产品代码里不要硬编码密钥，要通过环境变量读取 API key。",
+          "API 集成时要保留输入、输出、失败原因和版本信息，方便调试和回滚。",
+          "初学者可以先用伪代码理解流程，再按官方文档实现具体接口。"
+        ],
+        example: [
+          "伪代码流程：",
+          "",
+          "request = {",
+          "  user_task: '根据这些冰箱食材生成晚餐方案',",
+          "  enabled_skill: 'recipe-ingredient-matcher',",
+          "  files: ['ingredients.json'],",
+          "  acceptance: [",
+          "    '说明用了哪些用户输入食材',",
+          "    '列出缺少的调料',",
+          "    '如果食材过多，拆成多道菜'",
+          "  ]",
+          "}",
+          "",
+          "response = call_model_with_skill(request)",
+          "validate(response, request.acceptance)"
+        ].join("\n"),
+        expected: "你会把 API 理解成“把 skill 接到产品里的通道”，而不是一个神秘黑盒。",
+        practice: {
+          type: "jsonCheck",
+          title: "写一个 API 任务描述 JSON",
+          placeholder: "{\n  \"task\": \"根据冰箱食材生成 2 道晚餐菜\",\n  \"skill\": \"recipe-ingredient-matcher\",\n  \"inputs\": [\"鸡蛋\", \"番茄\", \"菠菜\", \"豆腐\"],\n  \"acceptance\": [\"说明食材覆盖率\", \"提醒缺少调料\"]\n}",
+          required: ["task", "skill", "inputs", "acceptance"],
+          success: "JSON 合格。真实接 API 前，先把任务、skill、输入和验收条件写清楚，会少很多调试痛苦。"
+        },
+        quiz: [
+          {
+            q: "API key 应该放在哪里？",
+            options: ["公开仓库的 HTML 文件里", "环境变量或安全的服务端配置里", "截图发到聊天里"],
+            answer: 1,
+            explain: "密钥必须避免进入公开代码、截图或聊天记录。"
+          }
+        ],
+        prompt: "请用初学者能懂的方式，把下面这个 AI 功能设计成 API 调用流程。请输出：前端输入、后端处理、需要的 skill、环境变量、错误处理、验收标准。功能：{{功能描述}}",
+        sourceNote: "本章对应 Skills with the Claude API。具体参数和可用接口请以 Anthropic 最新官方 API 文档为准。"
+      },
+      {
+        id: "claude-code",
+        title: "Skills with Claude Code",
+        kind: "Video",
+        duration: "4m",
+        tags: ["Claude Code", "代码生成", "测试"],
+        goal: "理解在代码项目中使用 skill 的方式：让 agent 按你的工程规范改代码、写测试、做审查。",
+        concepts: [
+          "Claude Code 场景里，skill 可以保存团队的代码风格、测试规则、评审清单和项目约定。",
+          "让 agent 改代码前，先让它读项目结构和相关文件，而不是直接凭空生成。",
+          "好的代码 skill 会要求小步修改、运行测试、解释风险和不碰无关文件。",
+          "对你这种初学者，Claude Code skill 可以变成“耐心的工程教练”：边改边解释为什么。"
+        ],
+        example: [
+          "适合 Claude Code 的 skill 片段：",
+          "",
+          "When editing this project:",
+          "- Inspect existing file patterns before changing code.",
+          "- Keep changes scoped to the requested feature.",
+          "- Add focused tests when behavior changes.",
+          "- Do not rewrite unrelated files.",
+          "- Explain the change in beginner-friendly language.",
+          "",
+          "适用任务：",
+          "请给我的菜谱生成器加一个“食材过多时拆成多道菜”的规则，并写一个测试。"
+        ].join("\n"),
+        expected: "你会知道怎样把“我想让 AI 怎么帮我写代码”变成稳定的项目协作规则。",
+        practice: {
+          type: "checklist",
+          title: "代码协作 Skill 检查",
+          items: [
+            "说明 agent 改代码前要先读哪些文件",
+            "说明一次修改的边界，不要顺手重构无关内容",
+            "说明什么时候需要写测试或手动验证",
+            "说明 final answer 要用初学者能懂的话解释",
+            "说明不能提交密钥、隐私数据或无关大文件"
+          ],
+          success: "很实用。你已经把“AI 帮我写代码”变成了更可控的协作流程。"
+        },
+        quiz: [
+          {
+            q: "让 Claude Code 改项目时，哪种要求更健康？",
+            options: ["先读现有代码模式，再做小范围修改", "直接重写整个项目", "跳过测试，感觉能跑就行"],
+            answer: 0,
+            explain: "代码协作的核心是理解上下文、小步修改和验证。"
+          }
+        ],
+        prompt: "请帮我为当前项目写一个 Claude Code 协作 skill。目标是：适合初学者 vibe coding，要求改动前先读代码、改动范围小、解释清楚、验证结果、保护密钥。请输出完整 SKILL.md。",
+        sourceNote: "本章对应 Skills with Claude Code，并结合 Anthropic 官方说明中 Claude Code 可使用 Skills 的信息改写。"
+      },
+      {
+        id: "agent-sdk",
+        title: "Skills with the Claude Agent SDK",
+        kind: "Video",
+        duration: "21m",
+        tags: ["Agent SDK", "研究型 Agent", "编排"],
+        goal: "理解 SDK 场景：当你要构建一个能反复执行复杂任务的 agent，skill 可以成为它的专业工作手册。",
+        concepts: [
+          "SDK 更适合开发者把 agent 放进自己的程序里，控制任务流程、工具、文件和输出。",
+          "Skill 可以让 agent 在某个专业任务上更稳定，例如研究开源项目并生成学习指南。",
+          "复杂 agent 通常需要分阶段：收集资料、筛选证据、生成结构、验证引用、输出结果。",
+          "不要一开始就做复杂 SDK 产品。先用静态 skill 和手工流程验证需求，再自动化。"
+        ],
+        example: [
+          "研究型 agent 的高层流程：",
+          "",
+          "1. 用户输入：想学习的开源工具或主题",
+          "2. Agent 读取 research-guide-skill",
+          "3. Agent 搜集官方文档、README、示例代码",
+          "4. Agent 生成学习路径和练习",
+          "5. Agent 检查来源和不确定点",
+          "6. 输出可交互学习资料或 Markdown 笔记",
+          "",
+          "Skill 的作用：",
+          "规定研究顺序、引用要求、输出模板和质量标准。"
+        ].join("\n"),
+        expected: "你会知道 SDK 是产品化 agent 的一条路，但不必第一天就跳进去。",
+        practice: {
+          type: "promptBuilder",
+          title: "设计一个研究型 Agent 任务",
+          fields: [
+            { key: "topic", label: "研究主题", placeholder: "例如：给初学者学习 Agent Skills" },
+            { key: "sources", label: "允许使用的资料源", placeholder: "例如：官方文档、GitHub README、课程公开页" },
+            { key: "output", label: "希望输出的成品", placeholder: "例如：交互式 HTML 学习资料" }
+          ],
+          success: "任务描述已生成。真实 SDK 化之前，先用这个任务描述手工跑通一次。"
+        },
+        quiz: [
+          {
+            q: "对初学者来说，什么时候才值得考虑 SDK？",
+            options: ["需求还没想清楚时", "手工流程已经反复验证，想把它产品化自动执行时", "只是想做一个静态页面时"],
+            answer: 1,
+            explain: "SDK 适合把已经验证过的 agent 流程变成程序化产品能力。"
+          }
+        ],
+        prompt: "请帮我把这个手工 AI 工作流改造成未来可用 Agent SDK 实现的任务编排图。请先给初学者版，不写具体 SDK 代码，只写阶段、输入、输出、需要的 skill、需要的 tool、验证点。工作流：{{粘贴工作流}}",
+        sourceNote: "本章对应 Skills with the Claude Agent SDK，并结合课程公开页对研究 agent 示例的描述改写。"
+      },
+      {
+        id: "conclusion",
+        title: "Conclusion",
+        kind: "Video",
+        duration: "1m",
+        tags: ["复盘", "下一步", "项目化"],
+        goal: "把课程知识收束成一个行动：选一个真实重复流程，做出你的第一个可测试 skill。",
+        concepts: [
+          "学完后不要追求一次做完完整 agent 系统，先做一个最小 skill。",
+          "优先选择你正在反复问 AI 的任务，因为你已经知道痛点在哪里。",
+          "一个好 skill 的判断标准是：触发清楚、边界窄、输出稳定、能被测试。",
+          "每次真实使用后，把失败案例补进 references 或验收标准，skill 才会越来越像你的工作习惯。"
+        ],
+        example: [
+          "你的下一步可以很小：",
+          "",
+          "Day 1:",
+          "  写 recipe-ingredient-matcher/SKILL.md",
+          "",
+          "Day 2:",
+          "  用 5 组冰箱食材测试它",
+          "",
+          "Day 3:",
+          "  把失败案例整理成 references/edge-cases.md",
+          "",
+          "Day 4:",
+          "  把它接进你的菜谱 MVP 原型"
+        ].join("\n"),
+        expected: "你会带着一个具体 skill 项目离开课程，而不是只记住名词。",
+        practice: {
+          type: "reflection",
+          title: "写下你的第一个 Skill 项目",
+          minLength: 30,
+          prompt: "用 3 句话写下：我要做什么 skill？它什么时候触发？怎么判断它输出合格？",
+          success: "很好。这就是你的第一版 skill brief，可以继续扩展成 SKILL.md。"
+        },
+        quiz: [
+          {
+            q: "一个初学者最稳的下一步是什么？",
+            options: ["先做一个可测试的小 skill", "马上做完整社交 App", "先购买所有工具"],
+            answer: 0,
+            explain: "小 skill 能快速验证你的工作流是否真的有用。"
+          }
+        ],
+        prompt: "请根据我的项目想法，帮我选择第一个最小 skill。请比较 5 个候选，按实现难度、复用价值、验证难度、对用户价值评分，并给出第一周行动计划。项目想法：{{你的项目想法}}",
+        sourceNote: "本章对应 Conclusion。这里把结尾转化成项目行动计划。"
+      },
+      {
+        id: "quiz",
+        title: "Quiz",
+        kind: "Graded Quiz",
+        duration: "Practice Quiz",
+        tags: ["总复习", "概念检查", "行动计划"],
+        goal: "用小测验检查你是否真的分清了 Skill、Tool、MCP、Subagent，以及何时把流程沉淀成 skill。",
+        concepts: [
+          "Skill：稳定流程、规则、参考资料、模板、可选脚本。",
+          "Tool：agent 可调用的具体动作或函数。",
+          "MCP：连接外部系统或数据源的标准化服务。",
+          "Subagent：带独立角色和上下文的任务协作者。",
+          "初学者路线：先手工验证，再 skill 化，再考虑 API / Code / SDK 集成。"
+        ],
+        example: [
+          "总复习判断：",
+          "",
+          "需求：用户输入冰箱食材，系统生成菜谱。",
+          "",
+          "Skill:",
+          "  食材覆盖、调料提醒、拆分多道菜的规则。",
+          "",
+          "Tool:",
+          "  查询营养数据库或餐厅评分。",
+          "",
+          "MCP:",
+          "  连接你的菜谱数据库、用户收藏和地图服务。",
+          "",
+          "Subagent:",
+          "  幼儿教育内容审核员或营养审核员。"
+        ].join("\n"),
+        expected: "你能把下一步产品学习路线讲清楚，并能开始做第一个 skill。",
+        practice: {
+          type: "finalPlan",
+          title: "做一个 7 天行动计划",
+          items: [
+            "选定一个最小 skill：recipe-ingredient-matcher",
+            "写 SKILL.md 的 name、description、步骤和验收清单",
+            "准备 5 组测试食材，覆盖正常、食材过多、食材不足、调料缺失、儿童友好",
+            "把失败案例加入 references/edge-cases.md",
+            "把 skill 的规则迁移进菜谱 MVP 原型",
+            "找 3 个真实用户试用，记录他们是否愿意再次使用"
+          ],
+          success: "这份计划可以直接变成你的下一轮 vibe coding 任务。"
+        },
+        quiz: [
+          {
+            q: "下面哪个更像 Skill？",
+            options: ["如何按品牌规范生成 PPT 的说明和模板", "获取当前定位的系统函数", "数据库连接字符串"],
+            answer: 0,
+            explain: "Skill 封装的是任务知识、流程、模板和资源。"
+          },
+          {
+            q: "下面哪个更像 Tool？",
+            options: ["代码评审清单", "调用地图 API 查附近餐厅的函数", "产品定位文档"],
+            answer: 1,
+            explain: "Tool 是可调用动作，常常和外部服务或本地能力相关。"
+          },
+          {
+            q: "为什么 skill 要保持窄边界？",
+            options: ["更容易触发准确、测试清楚、持续迭代", "为了让文件越少越好", "因为 agent 不能处理复杂任务"],
+            answer: 0,
+            explain: "窄边界让 skill 更可控，也更容易积累失败案例。"
+          },
+          {
+            q: "如果你还没验证菜谱生成功能是否有真实需求，最应该先做什么？",
+            options: ["马上做复杂 SDK", "用最小原型和真实用户测试核心场景", "先做完整社交系统"],
+            answer: 1,
+            explain: "先验证真实需求，再扩大技术复杂度。"
+          },
+          {
+            q: "一个 skill 的 description 最重要的作用是什么？",
+            options: ["说明什么时候应该使用这个 skill", "装饰文件头", "隐藏 API key"],
+            answer: 0,
+            explain: "description 是 agent 选择 skill 的关键入口。"
+          }
+        ],
+        prompt: "请作为我的 Agent Skills 学习教练，根据我目前的项目：菜谱 + 做菜游戏 + 幼儿教育 + 社交 App，帮我制定从 0 到 1 的 skill 学习路线。要求每一步都有产出物、验证方式和失败时的调整策略。",
+        sourceNote: "本章对应课程 Quiz。这里做成公开伴学自测题，不等同于课程平台里的正式测验。"
+      }
+    ];
+
+    const tabs = [
+      { id: "concepts", label: "概念" },
+      { id: "example", label: "例子" },
+      { id: "practice", label: "练习" },
+      { id: "quiz", label: "小测验" },
+      { id: "prompt", label: "提示词" },
+      { id: "sources", label: "资料源" }
+    ];
+
+    const state = {
+      activeLesson: Number(localStorage.getItem("agentSkillsActiveLesson") || 0),
+      activeTab: localStorage.getItem("agentSkillsActiveTab") || "concepts",
+      completed: JSON.parse(localStorage.getItem("agentSkillsCompleted") || "{}")
+    };
+
+    const els = {
+      lessonList: document.getElementById("lessonList"),
+      progressText: document.getElementById("progressText"),
+      progressFill: document.getElementById("progressFill"),
+      metaRow: document.getElementById("metaRow"),
+      lessonTitle: document.getElementById("lessonTitle"),
+      lessonGoal: document.getElementById("lessonGoal"),
+      completeBtn: document.getElementById("completeBtn"),
+      prevBtn: document.getElementById("prevBtn"),
+      nextBtn: document.getElementById("nextBtn"),
+      resetBtn: document.getElementById("resetBtn"),
+      tabs: document.getElementById("tabs"),
+      contentBody: document.getElementById("contentBody"),
+      canvas: document.getElementById("skillCanvas"),
+      visualHint: document.getElementById("visualHint")
+    };
+
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function saveState() {
+      localStorage.setItem("agentSkillsActiveLesson", String(state.activeLesson));
+      localStorage.setItem("agentSkillsActiveTab", state.activeTab);
+      localStorage.setItem("agentSkillsCompleted", JSON.stringify(state.completed));
+    }
+
+    function completedCount() {
+      return lessons.filter((lesson) => state.completed[lesson.id]).length;
+    }
+
+    function renderProgress() {
+      const count = completedCount();
+      els.progressText.textContent = count + " / " + lessons.length;
+      els.progressFill.style.width = Math.round((count / lessons.length) * 100) + "%";
+    }
+
+    function renderSidebar() {
+      els.lessonList.innerHTML = lessons.map((lesson, index) => {
+        const done = state.completed[lesson.id] ? " done" : "";
+        const active = index === state.activeLesson ? " active" : "";
+        return [
+          '<button class="lesson-button' + active + done + '" type="button" data-lesson="' + index + '">',
+          '  <span class="lesson-number">' + (index + 1) + '</span>',
+          '  <span class="lesson-label">',
+          '    <strong>' + escapeHtml(lesson.title) + '</strong>',
+          '    <span>' + escapeHtml(lesson.kind) + ' · ' + escapeHtml(lesson.duration) + '</span>',
+          '  </span>',
+          '</button>'
+        ].join("");
+      }).join("");
+
+      els.lessonList.querySelectorAll("[data-lesson]").forEach((button) => {
+        button.addEventListener("click", () => {
+          state.activeLesson = Number(button.dataset.lesson);
+          state.activeTab = "concepts";
+          saveState();
+          render();
+        });
+      });
+    }
+
+    function renderHero() {
+      const lesson = lessons[state.activeLesson];
+      els.metaRow.innerHTML = [
+        '<span class="pill">' + escapeHtml(lesson.kind) + '</span>',
+        '<span class="pill blue">' + escapeHtml(lesson.duration) + '</span>',
+        ...lesson.tags.map((tag) => '<span class="pill amber">' + escapeHtml(tag) + '</span>')
+      ].join("");
+      els.lessonTitle.textContent = String(state.activeLesson + 1).padStart(2, "0") + ". " + lesson.title;
+      els.lessonGoal.textContent = lesson.goal;
+      els.completeBtn.textContent = state.completed[lesson.id] ? "取消本章完成" : "标记本章完成";
+      els.prevBtn.disabled = state.activeLesson === 0;
+      els.nextBtn.disabled = state.activeLesson === lessons.length - 1;
+    }
+
+    function renderTabs() {
+      els.tabs.innerHTML = tabs.map((tab) => {
+        const active = tab.id === state.activeTab ? " active" : "";
+        return '<button class="tab-button' + active + '" type="button" data-tab="' + tab.id + '">' + tab.label + '</button>';
+      }).join("");
+      els.tabs.querySelectorAll("[data-tab]").forEach((button) => {
+        button.addEventListener("click", () => {
+          state.activeTab = button.dataset.tab;
+          saveState();
+          renderContent();
+          renderTabs();
+        });
+      });
+    }
+
+    function renderContent() {
+      const lesson = lessons[state.activeLesson];
+      if (state.activeTab === "concepts") {
+        els.contentBody.innerHTML = renderConcepts(lesson);
+      }
+      if (state.activeTab === "example") {
+        els.contentBody.innerHTML = renderExample(lesson);
+      }
+      if (state.activeTab === "practice") {
+        els.contentBody.innerHTML = renderPractice(lesson);
+        bindPractice(lesson);
+      }
+      if (state.activeTab === "quiz") {
+        els.contentBody.innerHTML = renderQuiz(lesson);
+        bindQuiz(lesson);
+      }
+      if (state.activeTab === "prompt") {
+        els.contentBody.innerHTML = renderPrompt(lesson);
+        bindPrompt(lesson);
+      }
+      if (state.activeTab === "sources") {
+        els.contentBody.innerHTML = renderSources(lesson);
+      }
+    }
+
+    function renderConcepts(lesson) {
+      return [
+        '<h3 class="section-title">这一章要抓住什么</h3>',
+        '<ul class="concept-list">',
+        lesson.concepts.map((item) => '<li><span class="dot"></span><span>' + escapeHtml(item) + '</span></li>').join(""),
+        '</ul>',
+        '<div class="notice" style="margin-top:12px;">',
+        '<strong>本章输出：</strong> ' + escapeHtml(lesson.expected),
+        '</div>'
+      ].join("");
+    }
+
+    function renderExample(lesson) {
+      return [
+        '<div class="example-grid">',
+        '  <pre><code>' + escapeHtml(lesson.example) + '</code></pre>',
+        '  <div class="expected">',
+        '    <div class="notice">',
+        '      <h3>怎么看这个例子</h3>',
+        '      <p>' + escapeHtml(lesson.expected) + '</p>',
+        '    </div>',
+        '    <div class="notice">',
+        '      <h3>迁移到你的菜谱 App</h3>',
+        '      <p>把例子里的流程换成你的真实场景：食材输入、菜谱生成、调料提醒、用户上传菜谱、餐厅推荐。先做一个小闭环，再扩展。</p>',
+        '    </div>',
+        '  </div>',
+        '</div>'
+      ].join("");
+    }
+
+    function renderPractice(lesson) {
+      const practice = lesson.practice;
+      let body = "";
+      if (practice.type === "scenario") {
+        body = [
+          '<div class="practice-row"><strong>' + escapeHtml(practice.question) + '</strong>',
+          practice.options.map((option, index) => (
+            '<label><input type="radio" name="scenario" value="' + index + '"><span>' + escapeHtml(option) + '</span></label>'
+          )).join(""),
+          '</div>',
+          '<div class="practice-actions"><button class="action-button" type="button" id="checkPractice">检查答案</button></div>'
+        ].join("");
+      }
+
+      if (practice.type === "checklist" || practice.type === "finalPlan") {
+        body = [
+          practice.items.map((item, index) => (
+            '<div class="practice-row"><label><input type="checkbox" data-check="' + index + '"><span>' + escapeHtml(item) + '</span></label></div>'
+          )).join(""),
+          '<div class="practice-actions"><button class="action-button" type="button" id="checkPractice">检查清单</button></div>'
+        ].join("");
+      }
+
+      if (practice.type === "order") {
+        body = [
+          '<p class="notice">给每一步填入 1 到 ' + practice.items.length + ' 的顺序。</p>',
+          practice.items.map((item, index) => (
+            '<div class="practice-row mini-grid"><label>' + escapeHtml(item) + '</label><input type="text" inputmode="numeric" data-order="' + index + '" placeholder="顺序"></div>'
+          )).join(""),
+          '<div class="practice-actions"><button class="action-button" type="button" id="checkPractice">检查排序</button></div>'
+        ].join("");
+      }
+
+      if (practice.type === "compare") {
+        body = [
+          '<div class="practice-row"><strong>' + escapeHtml(practice.question) + '</strong></div>',
+          practice.options.map((option, index) => (
+            '<div class="practice-row"><label><input type="checkbox" data-compare="' + index + '"><span>' + escapeHtml(option.text) + '</span></label></div>'
+          )).join(""),
+          '<div class="practice-actions"><button class="action-button" type="button" id="checkPractice">检查选择</button></div>'
+        ].join("");
+      }
+
+      if (practice.type === "classify") {
+        body = [
+          practice.items.map((item, index) => (
+            '<div class="practice-row mini-grid"><label>' + escapeHtml(item.text) + '</label><select data-classify="' + index + '">' +
+            '<option value="">选择类别</option>' +
+            practice.categories.map((category) => '<option value="' + escapeHtml(category) + '">' + escapeHtml(category) + '</option>').join("") +
+            '</select></div>'
+          )).join(""),
+          '<div class="practice-actions"><button class="action-button" type="button" id="checkPractice">检查分类</button></div>'
+        ].join("");
+      }
+
+      if (practice.type === "skillDraft") {
+        body = [
+          '<div class="mini-grid">',
+          '  <div class="practice-row"><label>Skill name</label><input type="text" id="skillName" value="recipe-ingredient-matcher"></div>',
+          '  <div class="practice-row"><label>触发场景</label><input type="text" id="skillTrigger" value="根据用户输入的冰箱食材生成菜谱"></div>',
+          '</div>',
+          '<div class="practice-row"><label>主要步骤</label><textarea id="skillSteps">列出输入食材；优先使用全部食材；食材过多时拆成多道菜；提醒缺少的调料；说明替代方案。</textarea></div>',
+          '<div class="practice-row"><label>验收标准</label><textarea id="skillCriteria">每道菜说明用了哪些输入食材；明确必需调料和可选配料；不确定时写出假设。</textarea></div>',
+          '<div class="practice-actions"><button class="action-button" type="button" id="checkPractice">生成草稿</button></div>',
+          '<pre><code id="draftOutput">填写信息后点击生成草稿。</code></pre>'
+        ].join("");
+      }
+
+      if (practice.type === "jsonCheck") {
+        body = [
+          '<div class="practice-row"><label>任务 JSON</label><textarea id="jsonInput">' + escapeHtml(practice.placeholder) + '</textarea></div>',
+          '<div class="practice-actions"><button class="action-button" type="button" id="checkPractice">检查 JSON</button></div>'
+        ].join("");
+      }
+
+      if (practice.type === "reflection") {
+        body = [
+          '<div class="practice-row"><label>' + escapeHtml(practice.prompt) + '</label><textarea id="reflectionInput" placeholder="写下你的想法"></textarea></div>',
+          '<div class="practice-actions"><button class="action-button" type="button" id="checkPractice">保存练习</button></div>'
+        ].join("");
+      }
+
+      if (practice.type === "promptBuilder") {
+        body = [
+          practice.fields.map((field) => (
+            '<div class="practice-row"><label>' + escapeHtml(field.label) + '</label><input type="text" data-field="' + escapeHtml(field.key) + '" placeholder="' + escapeHtml(field.placeholder) + '"></div>'
+          )).join(""),
+          '<div class="practice-actions"><button class="action-button" type="button" id="checkPractice">生成任务描述</button></div>',
+          '<pre><code id="builderOutput">填写信息后点击生成。</code></pre>'
+        ].join("");
+      }
+
+      return [
+        '<div class="practice">',
+        '<h3 class="section-title">' + escapeHtml(practice.title) + '</h3>',
+        body,
+        '<div class="feedback" id="practiceFeedback">完成练习后这里会给你反馈。</div>',
+        '</div>'
+      ].join("");
+    }
+
+    function bindPractice(lesson) {
+      const practice = lesson.practice;
+      const button = document.getElementById("checkPractice");
+      if (!button) return;
+      button.addEventListener("click", () => {
+        let ok = false;
+        let message = practice.success || "完成。";
+        if (practice.type === "scenario") {
+          const selected = document.querySelector('input[name="scenario"]:checked');
+          ok = selected && Number(selected.value) === practice.answer;
+          message = ok ? practice.success : practice.hint;
+        }
+        if (practice.type === "checklist" || practice.type === "finalPlan") {
+          const checks = [...document.querySelectorAll("[data-check]")];
+          ok = checks.every((box) => box.checked);
+          message = ok ? practice.success : "还差一点：把清单全部勾完，才算完成这个小闭环。";
+        }
+        if (practice.type === "order") {
+          const values = [...document.querySelectorAll("[data-order]")].map((input) => Number(input.value.trim()));
+          ok = values.every((value, index) => value === index + 1);
+          message = ok ? practice.success : "顺序还不对。提示：先有用户任务，再匹配 skill，再逐步读取需要的内容。";
+        }
+        if (practice.type === "compare") {
+          const boxes = [...document.querySelectorAll("[data-compare]")];
+          ok = boxes.every((box, index) => box.checked === Boolean(practice.options[index].correct));
+          message = ok ? practice.success : "再看一眼：好的 skill 应该边界窄、可测试、不会包含隐私或过宽职责。";
+        }
+        if (practice.type === "classify") {
+          const selects = [...document.querySelectorAll("[data-classify]")];
+          ok = selects.every((select, index) => select.value === practice.items[index].answer);
+          message = ok ? practice.success : "有一两个分类还没放对。先问自己：这是规则说明、可调用动作、外部连接，还是独立角色？";
+        }
+        if (practice.type === "skillDraft") {
+          const name = document.getElementById("skillName").value.trim() || "my-skill";
+          const trigger = document.getElementById("skillTrigger").value.trim() || "处理一个稳定重复任务";
+          const steps = document.getElementById("skillSteps").value.trim();
+          const criteria = document.getElementById("skillCriteria").value.trim();
+          const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "my-skill";
+          const draft = [
+            "---",
+            "name: " + slug,
+            "description: Use this skill when you need to " + trigger + " with a consistent workflow and clear acceptance criteria.",
+            "---",
+            "",
+            "# " + name,
+            "",
+            "## Workflow",
+            ...steps.split(/[；;\n]+/).filter(Boolean).map((step, index) => (index + 1) + ". " + step.trim()),
+            "",
+            "## Acceptance Criteria",
+            ...criteria.split(/[；;\n]+/).filter(Boolean).map((item) => "- " + item.trim())
+          ].join("\n");
+          document.getElementById("draftOutput").textContent = draft;
+          ok = true;
+          message = practice.success;
+        }
+        if (practice.type === "jsonCheck") {
+          try {
+            const data = JSON.parse(document.getElementById("jsonInput").value);
+            const missing = practice.required.filter((key) => !(key in data));
+            ok = missing.length === 0;
+            message = ok ? practice.success : "JSON 格式对了，但缺少字段：" + missing.join(", ");
+          } catch (error) {
+            ok = false;
+            message = "JSON 还不能解析：" + error.message;
+          }
+        }
+        if (practice.type === "reflection") {
+          const text = document.getElementById("reflectionInput").value.trim();
+          ok = text.length >= practice.minLength;
+          message = ok ? practice.success : "再具体一点，至少写出 skill 名称、触发场景和合格标准。";
+        }
+        if (practice.type === "promptBuilder") {
+          const values = {};
+          document.querySelectorAll("[data-field]").forEach((input) => {
+            values[input.dataset.field] = input.value.trim();
+          });
+          ok = Object.values(values).every(Boolean);
+          if (ok) {
+            document.getElementById("builderOutput").textContent = [
+              "请构建一个研究型 agent 任务：",
+              "- 研究主题：" + values.topic,
+              "- 允许资料源：" + values.sources,
+              "- 目标产出：" + values.output,
+              "- 要求：先列研究阶段，再列每阶段输入输出、需要的 skill/tool、验证点和不确定风险。"
+            ].join("\n");
+            message = practice.success;
+          } else {
+            message = "三个输入都填一下，任务描述才够完整。";
+          }
+        }
+        setFeedback("practiceFeedback", message, ok ? "good" : "warn");
+        if (ok) {
+          state.completed[lesson.id] = true;
+          saveState();
+          renderProgress();
+          renderSidebar();
+          renderHero();
+        }
+      });
+    }
+
+    function renderQuiz(lesson) {
+      return [
+        '<div class="quiz-list">',
+        lesson.quiz.map((item, index) => [
+          '<div class="quiz-item">',
+          '  <strong>' + (index + 1) + ". " + escapeHtml(item.q) + '</strong>',
+          '  <div class="quiz-options">',
+          item.options.map((option, optionIndex) => (
+            '<label><input type="radio" name="quiz-' + index + '" value="' + optionIndex + '"><span>' + escapeHtml(option) + '</span></label>'
+          )).join(""),
+          '  </div>',
+          '</div>'
+        ].join("")).join(""),
+        '<div class="practice-actions"><button class="action-button" type="button" id="checkQuiz">提交测验</button></div>',
+        '<div class="feedback" id="quizFeedback">提交后会显示分数和解释。</div>',
+        '</div>'
+      ].join("");
+    }
+
+    function bindQuiz(lesson) {
+      const button = document.getElementById("checkQuiz");
+      if (!button) return;
+      button.addEventListener("click", () => {
+        let score = 0;
+        const details = lesson.quiz.map((item, index) => {
+          const selected = document.querySelector('input[name="quiz-' + index + '"]:checked');
+          const ok = selected && Number(selected.value) === item.answer;
+          if (ok) score += 1;
+          return (ok ? "正确" : "再想想") + "：" + item.explain;
+        });
+        const allDone = score === lesson.quiz.length;
+        setFeedback("quizFeedback", "得分 " + score + " / " + lesson.quiz.length + "。 " + details.join(" "), allDone ? "good" : "warn");
+        if (allDone) {
+          state.completed[lesson.id] = true;
+          saveState();
+          renderProgress();
+          renderSidebar();
+          renderHero();
+        }
+      });
+    }
+
+    function renderPrompt(lesson) {
+      return [
+        '<div class="practice">',
+        '<h3 class="section-title">可复用 AI 提示词</h3>',
+        '<pre><code id="promptText">' + escapeHtml(lesson.prompt) + '</code></pre>',
+        '<div class="practice-actions">',
+        '<button class="action-button" type="button" id="copyPrompt">复制提示词</button>',
+        '<button class="secondary-button" type="button" id="adaptPrompt">改成菜谱 App 版本</button>',
+        '</div>',
+        '<div class="feedback" id="promptFeedback">你可以把这段提示词拿去和 AI 一起做项目。</div>',
+        '</div>'
+      ].join("");
+    }
+
+    function bindPrompt(lesson) {
+      const copyButton = document.getElementById("copyPrompt");
+      const adaptButton = document.getElementById("adaptPrompt");
+      copyButton.addEventListener("click", async () => {
+        try {
+          await navigator.clipboard.writeText(document.getElementById("promptText").textContent);
+          setFeedback("promptFeedback", "已复制。可以直接粘贴到 AI 对话里继续推进。", "good");
+        } catch (error) {
+          setFeedback("promptFeedback", "浏览器没有开放剪贴板权限。你可以手动选中复制。", "warn");
+        }
+      });
+      adaptButton.addEventListener("click", () => {
+        const adapted = [
+          "我正在做一个菜谱类 App，第一阶段只做菜谱生成功能。",
+          "请基于本章主题：" + lesson.title + "，帮我把 Agent Skills 的知识应用到这个功能里。",
+          "重点关注：用户输入多个冰箱食材、尽量用完食材、食材过多时拆成多道菜、提醒缺少调料、输出可测试的验收标准。",
+          "请输出：概念解释、一个最小实现方案、一个 SKILL.md 草稿、3 个测试用例。"
+        ].join("\n");
+        document.getElementById("promptText").textContent = adapted;
+        setFeedback("promptFeedback", "已改写成菜谱 App 版本。", "good");
+      });
+    }
+
+    function renderSources(lesson) {
+      return [
+        '<div class="source-list">',
+        '<div class="source-item"><strong>本章依据：</strong> ' + escapeHtml(lesson.sourceNote) + '</div>',
+        sources.map((source) => [
+          '<div class="source-item">',
+          '<a href="' + source.url + '" target="_blank" rel="noreferrer">' + escapeHtml(source.label) + '</a>',
+          '<p>' + escapeHtml(source.note) + '</p>',
+          '</div>'
+        ].join("")).join(""),
+        '<div class="source-item"><strong>版权边界：</strong> 本资料是公开信息的中文伴学改写和练习设计，不包含课程视频、登录后作业或非公开讲义。</div>',
+        '</div>'
+      ].join("");
+    }
+
+    function setFeedback(id, message, type) {
+      const node = document.getElementById(id);
+      if (!node) return;
+      node.className = "feedback " + type;
+      node.textContent = message;
+    }
+
+    els.completeBtn.addEventListener("click", () => {
+      const lesson = lessons[state.activeLesson];
+      state.completed[lesson.id] = !state.completed[lesson.id];
+      saveState();
+      render();
+    });
+
+    els.prevBtn.addEventListener("click", () => {
+      if (state.activeLesson > 0) {
+        state.activeLesson -= 1;
+        state.activeTab = "concepts";
+        saveState();
+        render();
+      }
+    });
+
+    els.nextBtn.addEventListener("click", () => {
+      if (state.activeLesson < lessons.length - 1) {
+        state.activeLesson += 1;
+        state.activeTab = "concepts";
+        saveState();
+        render();
+      }
+    });
+
+    els.resetBtn.addEventListener("click", () => {
+      const ok = window.confirm("确定要重置所有学习进度吗？");
+      if (!ok) return;
+      state.completed = {};
+      state.activeLesson = 0;
+      state.activeTab = "concepts";
+      saveState();
+      render();
+    });
+
+    function render() {
+      if (!lessons[state.activeLesson]) state.activeLesson = 0;
+      if (!tabs.some((tab) => tab.id === state.activeTab)) state.activeTab = "concepts";
+      renderProgress();
+      renderSidebar();
+      renderHero();
+      renderTabs();
+      renderContent();
+      drawSkillMap();
+    }
+
+    const canvasState = {
+      hover: null,
+      t: 0
+    };
+
+    const skillNodes = [
+      { key: "agent", label: "Agent", x: 0.5, y: 0.48, r: 42, color: "#2f7d59", hint: "负责理解任务，并决定是否加载某个 skill。" },
+      { key: "skill", label: "SKILL.md", x: 0.23, y: 0.25, r: 34, color: "#276aa8", hint: "写触发条件、工作流、边界和验收标准。" },
+      { key: "refs", label: "references", x: 0.77, y: 0.25, r: 34, color: "#a15f10", hint: "保存较长的背景资料、案例、规则和检查表。" },
+      { key: "scripts", label: "scripts", x: 0.26, y: 0.76, r: 34, color: "#b4473f", hint: "处理确定性任务，例如计算、解析和格式转换。" },
+      { key: "output", label: "output", x: 0.75, y: 0.76, r: 34, color: "#5b665f", hint: "最终交付物：报告、代码、菜谱、学习资料或文件。" }
+    ];
+
+    function drawSkillMap() {
+      const canvas = els.canvas;
+      const ctx = canvas.getContext("2d");
+      const width = canvas.width;
+      const height = canvas.height;
+      canvasState.t += 0.025;
+      ctx.clearRect(0, 0, width, height);
+      ctx.fillStyle = "#fbfbf7";
+      ctx.fillRect(0, 0, width, height);
+
+      const points = skillNodes.map((node) => ({
+        ...node,
+        px: node.x * width,
+        py: node.y * height + Math.sin(canvasState.t + node.x * 5) * 3
+      }));
+
+      ctx.lineWidth = 2;
+      points.filter((node) => node.key !== "agent").forEach((node) => {
+        const agent = points.find((item) => item.key === "agent");
+        ctx.strokeStyle = "rgba(91, 102, 95, 0.32)";
+        ctx.beginPath();
+        ctx.moveTo(agent.px, agent.py);
+        ctx.lineTo(node.px, node.py);
+        ctx.stroke();
+      });
+
+      points.forEach((node) => {
+        const isHover = canvasState.hover === node.key;
+        ctx.beginPath();
+        ctx.arc(node.px, node.py, node.r + (isHover ? 5 : 0), 0, Math.PI * 2);
+        ctx.fillStyle = isHover ? node.color : node.color + "dd";
+        ctx.fill();
+        ctx.lineWidth = 4;
+        ctx.strokeStyle = "#ffffff";
+        ctx.stroke();
+        ctx.fillStyle = "#ffffff";
+        ctx.font = node.key === "agent" ? "700 22px sans-serif" : "700 16px sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        const parts = node.label.split(" ");
+        if (parts.length > 1) {
+          ctx.fillText(parts[0], node.px, node.py - 8);
+          ctx.fillText(parts.slice(1).join(" "), node.px, node.py + 12);
+        } else {
+          ctx.fillText(node.label, node.px, node.py);
+        }
+      });
+      requestAnimationFrame(drawSkillMap);
+    }
+
+    els.canvas.addEventListener("mousemove", (event) => {
+      const rect = els.canvas.getBoundingClientRect();
+      const scaleX = els.canvas.width / rect.width;
+      const scaleY = els.canvas.height / rect.height;
+      const x = (event.clientX - rect.left) * scaleX;
+      const y = (event.clientY - rect.top) * scaleY;
+      let hover = null;
+      for (const node of skillNodes) {
+        const dx = x - node.x * els.canvas.width;
+        const dy = y - node.y * els.canvas.height;
+        if (Math.sqrt(dx * dx + dy * dy) <= node.r + 8) {
+          hover = node;
+          break;
+        }
+      }
+      canvasState.hover = hover ? hover.key : null;
+      els.visualHint.textContent = hover ? hover.hint : "移动鼠标到节点上，看每个部分在工作流里的位置。";
+    });
+
+    els.canvas.addEventListener("mouseleave", () => {
+      canvasState.hover = null;
+      els.visualHint.textContent = "移动鼠标到节点上，看每个部分在工作流里的位置。";
+    });
+
+    render();
+  </script>
+</body>
+</html>
